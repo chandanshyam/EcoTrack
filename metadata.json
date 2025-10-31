@@ -1,0 +1,7 @@
+{
+  "name": "Copy of EcoTrack: AI Sustainable Travel Planner",
+  "description": "An AI-powered sustainable travel planning application that helps users plan eco-friendly trips by analyzing and suggesting routes and transport modes with minimal carbon footprint.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
