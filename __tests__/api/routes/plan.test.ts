@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { POST, GET } from '../../../app/api/routes/plan/route';
+import { POST, GET, routeCache } from '../../../app/api/routes/plan/route';
 import { TransportMode } from '../../../lib/types';
 
 // Mock the services
@@ -19,6 +19,9 @@ const mockCompareWithConventionalTravel = require('../../../lib/services/carbonC
 describe('/api/routes/plan', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    
+    // Clear the route cache between tests
+    routeCache.clear();
     
     // Setup default mocks
     mockPlanTripWithAI.mockResolvedValue({
