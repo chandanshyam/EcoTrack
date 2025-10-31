@@ -1,7 +1,6 @@
 // Firebase Admin SDK imports - will be available after npm install
 // import { initializeApp, getApps, cert } from 'firebase-admin/app';
 // import { getFirestore, Firestore, Timestamp } from 'firebase-admin/firestore';
-import { env } from '@/lib/env';
 import { User, CompletedTrip, RouteOption, EnvironmentalMetrics, TrendData } from '@/lib/types';
 
 // Firebase Admin SDK types and interfaces
