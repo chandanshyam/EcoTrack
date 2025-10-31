@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-eco-green-600 hover:bg-eco-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .btn-secondary {
+    @apply bg-carbon-gray-200 hover:bg-carbon-gray-300 text-carbon-gray-800 font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .card {
+    @apply bg-white rounded-lg shadow-md border border-gray-200 p-6;
+  }
+  
+  .sustainability-score-high {
+    @apply text-eco-green-600 bg-eco-green-50 border-eco-green-200;
+  }
+  
+  .sustainability-score-medium {
+    @apply text-yellow-600 bg-yellow-50 border-yellow-200;
+  }
+  
+  .sustainability-score-low {
+    @apply text-red-600 bg-red-50 border-red-200;
+  }
+}
