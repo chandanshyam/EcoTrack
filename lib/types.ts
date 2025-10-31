@@ -54,6 +54,7 @@ export interface User {
   name?: string;
   preferences: UserPreferences;
   createdAt: Date;
+  updatedAt?: Date;
 }
 
 export interface UserPreferences {

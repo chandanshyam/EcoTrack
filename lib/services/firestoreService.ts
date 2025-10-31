@@ -87,6 +87,84 @@ class FirestoreService {
     }
   }
 
+  async getUserProfile(email: string): Promise<User | null> {
+    try {
+      const usersQuery = this.db.collection('users').where('email', '==', email);
+      const snapshot = await usersQuery.get();
+      
+      if (snapshot.empty) {
+        return null;
+      }
+      
+      const userDoc = snapshot.docs[0];
+      const data = userDoc.data();
+      
+      return {
+        id: userDoc.id,
+        email: data.email,
+        name: data.name,
+        preferences: data.preferences,
+        createdAt: data.createdAt instanceof Date ? data.createdAt : new Date(data.createdAt),
+      };
+    } catch (error) {
+      console.error('Error getting user profile:', error);
+      throw new Error('Failed to get user profile');
+    }
+  }
+
+  async createUserProfile(email: string, userData: Omit<User, 'id'>): Promise<User> {
+    try {
+      const userRef = this.db.collection('users').doc();
+      const user: User = {
+        id: userRef.id,
+        ...userData,
+      };
+      
+      await userRef.set({
+        ...user,
+        createdAt: user.createdAt,
+        updatedAt: new Date(),
+      });
+      
+      return user;
+    } catch (error) {
+      console.error('Error creating user profile:', error);
+      throw new Error('Failed to create user profile');
+    }
+  }
+
+  async updateUserProfile(email: string, updates: Partial<Omit<User, 'id' | 'email' | 'createdAt'>>): Promise<User> {
+    try {
+      const usersQuery = this.db.collection('users').where('email', '==', email);
+      const snapshot = await usersQuery.get();
+      
+      if (snapshot.empty) {
+        throw new Error('User not found');
+      }
+      
+      const userDoc = snapshot.docs[0];
+      await userDoc.ref.update({
+        ...updates,
+        updatedAt: new Date(),
+      });
+      
+      // Return updated user
+      const updatedDoc = await userDoc.ref.get();
+      const data = updatedDoc.data()!;
+      
+      return {
+        id: updatedDoc.id,
+        email: data.email,
+        name: data.name,
+        preferences: data.preferences,
+        createdAt: data.createdAt instanceof Date ? data.createdAt : new Date(data.createdAt),
+      };
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      throw new Error('Failed to update user profile');
+    }
+  }
+
   async getUser(userId: string): Promise<User | null> {
     try {
       const userDoc = await this.db.collection('users').doc(userId).get();
