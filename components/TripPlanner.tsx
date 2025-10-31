@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+'use client'
 
-interface GeolocationCoords {
-  latitude: number;
-  longitude: number;
-}
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { GeolocationCoords } from '@/lib/types';
 
 interface TripPlannerProps {
   onPlanTrip: (origin: string, destination: string, userLocation?: GeolocationCoords) => void;
@@ -41,10 +41,10 @@ export const TripPlanner: React.FC<TripPlannerProps> = ({ onPlanTrip, isLoading 
   };
 
   return (
-    <div className="bg-brut-white border-2 border-brut-black p-6 md:p-8 rounded-lg shadow-hard w-full max-w-4xl mx-auto">
+    <Card className="w-full max-w-4xl mx-auto">
       <form onSubmit={handleSubmit} className="flex flex-col md:flex-row items-center gap-4">
         <div className="w-full md:flex-1">
-          <label htmlFor="origin" className="block text-sm font-bold text-brut-black mb-1">Origin</label>
+          <label htmlFor="origin" className="block text-sm font-bold text-carbon-gray-900 mb-1">Origin</label>
           <div className="relative flex items-center">
             <input
               id="origin"
@@ -52,14 +52,14 @@ export const TripPlanner: React.FC<TripPlannerProps> = ({ onPlanTrip, isLoading 
               value={origin}
               onChange={(e) => setOrigin(e.target.value)}
               placeholder="e.g., San Francisco, CA"
-              className="w-full p-3 bg-brut-white border-2 border-brut-black rounded-md focus:outline-none focus:ring-2 focus:ring-brut-green placeholder-gray-500"
+              className="w-full p-3 bg-white border-2 border-carbon-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-eco-green-500 focus:border-eco-green-500 placeholder-carbon-gray-500"
               required
             />
             <button
               type="button"
               onClick={handleUseMyLocation}
               disabled={isLocating || isLoading}
-              className="absolute right-2 p-1 text-brut-black hover:text-brut-green disabled:text-gray-400"
+              className="absolute right-2 p-1 text-carbon-gray-600 hover:text-eco-green-600 disabled:text-carbon-gray-400"
               aria-label="Use my current location"
             >
               {isLocating ? (
@@ -75,27 +75,28 @@ export const TripPlanner: React.FC<TripPlannerProps> = ({ onPlanTrip, isLoading 
             </button>
           </div>
         </div>
-        <div className="hidden md:block text-brut-black text-2xl font-bold mt-6">→</div>
+        <div className="hidden md:block text-carbon-gray-900 text-2xl font-bold mt-6">→</div>
         <div className="w-full md:flex-1">
-          <label htmlFor="destination" className="block text-sm font-bold text-brut-black mb-1">Destination</label>
+          <label htmlFor="destination" className="block text-sm font-bold text-carbon-gray-900 mb-1">Destination</label>
           <input
             id="destination"
             type="text"
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
             placeholder="e.g., Los Angeles, CA"
-            className="w-full p-3 bg-brut-white border-2 border-brut-black rounded-md focus:outline-none focus:ring-2 focus:ring-brut-green placeholder-gray-500"
+            className="w-full p-3 bg-white border-2 border-carbon-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-eco-green-500 focus:border-eco-green-500 placeholder-carbon-gray-500"
             required
           />
         </div>
-        <button
+        <Button
           type="submit"
           disabled={isLoading || isLocating}
-          className="w-full md:w-auto mt-4 md:mt-6 px-8 py-3 bg-brut-green text-brut-white font-bold rounded-md border-2 border-brut-black shadow-hard hover:shadow-hard-hover active:shadow-hard-active active:translate-x-[2px] active:translate-y-[2px] transition-all duration-150 disabled:bg-gray-400 disabled:shadow-none disabled:cursor-not-allowed disabled:transform-none"
+          className="w-full md:w-auto mt-4 md:mt-6 px-8 py-3"
+          size="lg"
         >
           {isLoading ? 'Analyzing...' : 'Plan Trip'}
-        </button>
+        </Button>
       </form>
-    </div>
+    </Card>
   );
 };

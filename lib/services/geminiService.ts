@@ -1,13 +1,8 @@
-import { GoogleGenAI, Type } from "@google/genai";
-import { RouteOption, SustainabilityAnalysis } from '../types';
+import { GoogleGenAI } from "@google/genai";
+import { RouteOption, SustainabilityAnalysis } from '@/lib/types';
+import { env } from '@/lib/env';
 
-const API_KEY = process.env.API_KEY;
-
-if (!API_KEY) {
-  console.warn("API_KEY is not set. Gemini API calls will fail.");
-}
-
-const ai = new GoogleGenAI({ apiKey: API_KEY! });
+const ai = env.GEMINI_API_KEY ? new GoogleGenAI({ apiKey: env.GEMINI_API_KEY }) : null;
 
 const defaultPlan: { routes: RouteOption[], analysis: SustainabilityAnalysis } = {
   routes: [],
@@ -27,7 +22,8 @@ export const planTripWithAI = async (
   destination: string,
   userLocation?: { latitude: number; longitude: number }
 ): Promise<{ routes: RouteOption[], analysis: SustainabilityAnalysis }> => {
-  if (!API_KEY) {
+  if (!ai || !env.GEMINI_API_KEY) {
+    console.warn("GEMINI_API_KEY is not set. Using default plan.");
     return Promise.resolve(defaultPlan);
   }
 
@@ -69,7 +65,7 @@ export const planTripWithAI = async (
 
   try {
     const response = await ai.models.generateContent(modelConfig);
-    let jsonString = response.text.trim();
+    let jsonString = response.text?.trim() || '';
 
     // The model might wrap the JSON in a markdown code block.
     if (jsonString.startsWith('```json')) {
