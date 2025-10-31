@@ -1,8 +1,8 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { RouteOption, SustainabilityAnalysis, RouteAnalysis, TransportMode, GeolocationCoords } from '@/lib/types';
+import { TravelPreferencesData } from '@/components/TravelPreferences';
 import { env } from '@/lib/env';
 import { CarbonCalculationService } from './carbonCalculationService';
-import { getRoutes } from './googleMapsService';
 
 const genAI = env.GEMINI_API_KEY ? new GoogleGenerativeAI(env.GEMINI_API_KEY) : null;
 
@@ -288,14 +288,33 @@ Respond with a JSON object:
 export const planTripWithAI = async (
   origin: string,
   destination: string,
-  userLocation?: GeolocationCoords
+  userLocation?: GeolocationCoords,
+  travelDate?: string,
+  preferences?: TravelPreferencesData
 ): Promise<{
   routes: RouteOption[];
   analysis: SustainabilityAnalysis;
 }> => {
   try {
-    // Get route options from Google Maps (already includes basic carbon calculations)
-    const googleRoutes = await getRoutes(origin, destination);
+    // Call our server-side API to get routes (avoids CORS issues)
+    const response = await fetch('/api/routes/plan', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        origin, 
+        destination, 
+        travelDate,
+        preferences 
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Route planning failed: ${response.statusText}`);
+    }
+
+    const { routes: googleRoutes } = await response.json();
     
     if (!googleRoutes || googleRoutes.length === 0) {
       throw new Error('No routes found');

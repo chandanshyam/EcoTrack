@@ -97,8 +97,11 @@ class GoogleMapsService {
 
   constructor() {
     this.apiKey = env.GOOGLE_MAPS_API_KEY;
+  }
+
+  private checkApiKey(): void {
     if (!this.apiKey) {
-      throw new Error('Google Maps API key is required');
+      throw new Error('Google Maps API key is required. Please set GOOGLE_MAPS_API_KEY environment variable.');
     }
   }
 
@@ -106,6 +109,7 @@ class GoogleMapsService {
    * Geocode an address to get coordinates and formatted address
    */
   async geocodeAddress(address: string): Promise<Location> {
+    this.checkApiKey();
     const url = `${this.baseUrl}/geocode/json?address=${encodeURIComponent(address)}&key=${this.apiKey}`;
     
     try {
@@ -138,6 +142,7 @@ class GoogleMapsService {
     destination: string,
     transportModes: TransportMode[] = [TransportMode.CAR, TransportMode.TRAIN, TransportMode.BUS]
   ): Promise<RouteOption[]> {
+    this.checkApiKey();
     const routes: RouteOption[] = [];
     
     // Geocode origin and destination
@@ -304,6 +309,7 @@ class GoogleMapsService {
    * Get place suggestions for autocomplete
    */
   async getPlaceSuggestions(input: string, location?: { lat: number; lng: number }): Promise<string[]> {
+    this.checkApiKey();
     const url = `${this.baseUrl}/place/autocomplete/json?` +
       `input=${encodeURIComponent(input)}&` +
       `types=geocode&` +

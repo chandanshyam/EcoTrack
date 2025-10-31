@@ -1,12 +1,13 @@
 import React from 'react';
 import { RouteOption } from '@/lib/types';
 import { TransportIcon } from '@/components/icons/TransportIcon';
-import { Card } from '@/components/ui/Card';
-import { formatCarbonFootprint, getSustainabilityScoreColor } from '@/lib/utils';
+import { formatCarbonFootprint } from '@/lib/utils';
 
 interface RouteCardProps {
   route: RouteOption;
   isBestOption: boolean;
+  isSelected?: boolean;
+  onSelect?: () => void;
 }
 
 const formatDuration = (minutes: number) => {
@@ -15,68 +16,113 @@ const formatDuration = (minutes: number) => {
   return `${h > 0 ? `${h}h ` : ''}${m}m`;
 };
 
-const getScoreColor = (score: number) => {
-  if (score > 80) return 'text-eco-green-600';
-  if (score > 60) return 'text-yellow-600';
-  return 'text-red-600';
-};
+export const RouteCard: React.FC<RouteCardProps> = ({ route, isBestOption, isSelected, onSelect }) => {
+  const getScoreCardClass = (score: number) => {
+    if (score > 80) return 'score-high';
+    if (score > 60) return 'score-medium';
+    return 'score-low';
+  };
 
-export const RouteCard: React.FC<RouteCardProps> = ({ route, isBestOption }) => {
+  const getCardClass = () => {
+    let baseClass = 'card-brutal hover:translate-x-2 hover:translate-y-2 hover:shadow-brutal-sm transition-all duration-150';
+    if (isSelected) {
+      baseClass += ' ring-4 ring-neo-blue bg-neo-blue bg-opacity-10';
+    } else if (isBestOption) {
+      baseClass += ' card-green';
+    }
+    if (onSelect) {
+      baseClass += ' cursor-pointer';
+    }
+    return baseClass;
+  };
+
   return (
     <div className="relative">
-      <Card className="transition-all duration-200 hover:shadow-lg">
+      <div 
+        className={getCardClass()}
+        onClick={onSelect}
+        role={onSelect ? 'button' : undefined}
+        tabIndex={onSelect ? 0 : undefined}
+        onKeyDown={onSelect ? (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onSelect();
+          }
+        } : undefined}
+      >
         {isBestOption && (
-          <div className="absolute -top-3 -right-3 bg-eco-green-100 text-eco-green-800 text-xs font-bold px-3 py-1 rounded-md border-2 border-eco-green-600">
-            Best Eco Choice
+          <div className="absolute -top-4 -right-4 status-success rotate-12">
+            BEST ECO CHOICE!
           </div>
         )}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
-          <h3 className="text-xl md:text-2xl font-bold text-carbon-gray-900 mb-2 md:mb-0">{route.name}</h3>
-          <div className="flex items-center gap-2">
-            <span className="text-carbon-gray-700 text-sm font-semibold">Sustainability Score</span>
-            <span className={`text-2xl font-black ${getScoreColor(route.sustainabilityScore)}`}>
-              {route.sustainabilityScore}
-            </span>
+        
+        {isSelected && (
+          <div className="absolute -top-4 -left-4 card-blue rotate-[-12deg] px-3 py-1">
+            <span className="text-brutal text-sm">SELECTED</span>
+          </div>
+        )}
+        
+        {onSelect && (
+          <div className="absolute top-4 right-4">
+            <div className="card-yellow px-2 py-1">
+              <span className="text-brutal text-xs">CLICK TO SELECT</span>
+            </div>
+          </div>
+        )}
+        
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+          <h3 className="heading-brutal text-xl md:text-2xl mb-2 md:mb-0">
+            {route.name.toUpperCase()}
+          </h3>
+          <div className={`${getScoreCardClass(route.sustainabilityScore)} text-center min-w-[100px]`}>
+            <div className="text-sm font-mono">SCORE</div>
+            <div className="text-2xl font-bold">{route.sustainabilityScore}</div>
           </div>
         </div>
         
-        <div className="flex items-center space-x-4 mb-5 flex-wrap">
-          {route.transportModes.map((segment, index) => (
-            <React.Fragment key={index}>
-              <div className="flex items-center gap-2 text-carbon-gray-700">
-                <TransportIcon mode={segment.mode} className="w-5 h-5" />
-                <span className="text-sm font-medium">
-                  {segment.mode.charAt(0).toUpperCase() + segment.mode.slice(1)}
-                </span>
-              </div>
-              {index < route.transportModes.length - 1 && (
-                <span className="text-carbon-gray-400 text-lg font-bold">+</span>
-              )}
-            </React.Fragment>
-          ))}
+        {/* Transport Modes */}
+        <div className="mb-6">
+          <h4 className="text-brutal text-lg mb-3">TRANSPORT MODES:</h4>
+          <div className="flex items-center space-x-3 flex-wrap gap-2">
+            {route.transportModes.map((segment, index) => (
+              <React.Fragment key={index}>
+                <div className="card-yellow px-3 py-2 flex items-center gap-2">
+                  <TransportIcon mode={segment.mode} className="w-6 h-6" />
+                  <span className="text-brutal text-sm">
+                    {segment.mode.toUpperCase()}
+                  </span>
+                </div>
+                {index < route.transportModes.length - 1 && (
+                  <span className="text-brutal text-2xl">+</span>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center border-t-2 border-carbon-gray-200 pt-4">
-          <div>
-            <p className="text-sm text-carbon-gray-600">Duration</p>
-            <p className="text-lg font-bold text-carbon-gray-900">{formatDuration(route.totalDuration)}</p>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="card-cyan text-center">
+            <p className="text-brutal text-sm mb-1">TIME</p>
+            <p className="heading-brutal text-lg">{formatDuration(route.totalDuration)}</p>
           </div>
-          <div>
-            <p className="text-sm text-carbon-gray-600">Cost</p>
-            <p className="text-lg font-bold text-carbon-gray-900">${(route.totalCost ?? 0).toFixed(2)}</p>
+          <div className="card-yellow text-center">
+            <p className="text-brutal text-sm mb-1">COST</p>
+            <p className="heading-brutal text-lg">${(route.totalCost ?? 0).toFixed(0)}</p>
           </div>
-          <div>
-            <p className="text-sm text-carbon-gray-600">Distance</p>
-            <p className="text-lg font-bold text-carbon-gray-900">{route.totalDistance} km</p>
+          <div className="card-pink text-center">
+            <p className="text-brutal text-sm mb-1">DISTANCE</p>
+            <p className="heading-brutal text-lg">{route.totalDistance.toFixed(0)} KM</p>
           </div>
-          <div>
-            <p className="text-sm text-carbon-gray-600">CO₂ Footprint</p>
-            <p className="text-lg font-bold text-carbon-gray-900">
+          <div className="card-brutal text-center bg-neo-orange">
+            <p className="text-brutal text-sm mb-1">CO₂</p>
+            <p className="heading-brutal text-lg">
               {formatCarbonFootprint(route.totalCarbonFootprint ?? 0)}
             </p>
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   );
 };

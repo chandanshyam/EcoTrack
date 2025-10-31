@@ -13,12 +13,6 @@ export function formatCarbonFootprint(kg: number): string {
   return `${kg.toFixed(1)}kg CO₂e`
 }
 
-export function getSustainabilityScoreColor(score: number): string {
-  if (score >= 70) return 'sustainability-score-high'
-  if (score >= 40) return 'sustainability-score-medium'
-  return 'sustainability-score-low'
-}
-
 // Validation functions for user inputs and data models
 
 export function isValidLocation(location: any): location is Location {

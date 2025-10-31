@@ -3,8 +3,6 @@
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/Button'
-import { Card } from '@/components/ui/Card'
 
 export default function SignIn() {
   const router = useRouter()
@@ -40,25 +38,36 @@ export default function SignIn() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-neo-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to EcoTrack
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Plan sustainable trips with AI-powered insights
-          </p>
+        {/* Logo and Title */}
+        <div className="text-center">
+          <div className="inline-block card-green p-6 mb-6">
+            <svg className="w-16 h-16 text-neo-black" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <h1 className="heading-brutal text-5xl mb-4">
+            ECOTRACK
+          </h1>
+          <div className="card-yellow inline-block px-6 py-3">
+            <p className="text-brutal text-sm">AI-POWERED SUSTAINABLE TRAVEL</p>
+          </div>
         </div>
-        
-        <Card className="p-8">
+
+        {/* Sign In Card */}
+        <div className="card-brutal">
+          <h2 className="heading-brutal text-2xl mb-6 text-center">
+            SIGN IN
+          </h2>
+
           <div className="space-y-6">
-            <Button
+            <button
               onClick={handleGoogleSignIn}
               disabled={isLoading}
-              className="w-full flex justify-center items-center space-x-2"
+              className="btn-primary w-full flex justify-center items-center space-x-3"
             >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <svg className="w-6 h-6" viewBox="0 0 24 24">
                 <path
                   fill="currentColor"
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -76,10 +85,20 @@ export default function SignIn() {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              <span>{isLoading ? 'Signing in...' : 'Continue with Google'}</span>
-            </Button>
+              <span className="text-brutal">
+                {isLoading ? 'SIGNING IN...' : 'CONTINUE WITH GOOGLE'}
+              </span>
+            </button>
+
+            <div className="divider-brutal"></div>
+
+            <div className="status-info text-center">
+              <p className="text-sm">
+                PLAN SUSTAINABLE TRIPS WITH AI-POWERED INSIGHTS
+              </p>
+            </div>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   )

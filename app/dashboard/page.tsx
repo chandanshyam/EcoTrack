@@ -4,8 +4,6 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import Header from '@/components/Header'
-import { Card } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
 import Link from 'next/link'
 
 export default function DashboardPage() {
@@ -41,103 +39,94 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-neo-white">
       <Header />
-      <div className="max-w-7xl mx-auto py-8 px-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back, {session.user.name || 'Traveler'}!
+      <div className="container-brutal">
+        {/* Welcome Section */}
+        <div className="text-center mb-12">
+          <h1 className="heading-brutal text-4xl md:text-6xl mb-4">
+            WELCOME BACK, {(session.user.name || 'TRAVELER').toUpperCase()}!
           </h1>
-          <p className="text-gray-600 mt-2">
-            Track your sustainable travel journey and environmental impact.
-          </p>
+          <div className="card-yellow inline-block px-6 py-3">
+            <p className="text-brutal">TRACK YOUR SUSTAINABLE JOURNEY</p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {/* Quick Stats Cards */}
-          <Card className="p-6">
-            <div className="flex items-center">
-              <div className="p-3 bg-green-100 rounded-full">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Trips</p>
-                <p className="text-2xl font-bold text-gray-900">0</p>
-              </div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <div className="card-green text-center">
+            <div className="mb-4">
+              <svg className="w-12 h-12 mx-auto text-neo-black" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
             </div>
-          </Card>
+            <p className="text-brutal text-sm mb-2">TOTAL TRIPS</p>
+            <p className="heading-brutal text-4xl">0</p>
+          </div>
 
-          <Card className="p-6">
-            <div className="flex items-center">
-              <div className="p-3 bg-blue-100 rounded-full">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">CO₂ Saved</p>
-                <p className="text-2xl font-bold text-gray-900">0 kg</p>
-              </div>
+          <div className="card-cyan text-center">
+            <div className="mb-4">
+              <svg className="w-12 h-12 mx-auto text-neo-black" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+              </svg>
             </div>
-          </Card>
+            <p className="text-brutal text-sm mb-2">CO₂ SAVED</p>
+            <p className="heading-brutal text-4xl">0 KG</p>
+          </div>
 
-          <Card className="p-6">
-            <div className="flex items-center">
-              <div className="p-3 bg-purple-100 rounded-full">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Avg. Sustainability</p>
-                <p className="text-2xl font-bold text-gray-900">--</p>
-              </div>
+          <div className="card-pink text-center">
+            <div className="mb-4">
+              <svg className="w-12 h-12 mx-auto text-neo-black" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
             </div>
-          </Card>
+            <p className="text-brutal text-sm mb-2">AVG. SUSTAINABILITY</p>
+            <p className="heading-brutal text-4xl">--</p>
+          </div>
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Plan Your Next Trip</h2>
-            <p className="text-gray-600 mb-4">
-              Discover sustainable travel options with AI-powered route planning.
-            </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+          <div className="card-brutal">
+            <h2 className="heading-brutal text-2xl mb-4">PLAN YOUR NEXT TRIP</h2>
+            <div className="card-yellow p-4 mb-6">
+              <p className="text-brutal">DISCOVER SUSTAINABLE TRAVEL OPTIONS WITH AI-POWERED ROUTE PLANNING</p>
+            </div>
             <Link href="/">
-              <Button className="w-full">
-                Start Planning
-              </Button>
+              <button className="btn-primary w-full text-lg py-4">
+                START PLANNING
+              </button>
             </Link>
-          </Card>
+          </div>
 
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Manage Preferences</h2>
-            <p className="text-gray-600 mb-4">
-              Customize your travel preferences and sustainability goals.
-            </p>
+          <div className="card-brutal">
+            <h2 className="heading-brutal text-2xl mb-4">MANAGE PREFERENCES</h2>
+            <div className="card-cyan p-4 mb-6">
+              <p className="text-brutal">CUSTOMIZE YOUR TRAVEL PREFERENCES AND SUSTAINABILITY GOALS</p>
+            </div>
             <Link href="/profile">
-              <Button variant="outline" className="w-full">
-                Edit Profile
-              </Button>
+              <button className="btn-secondary w-full text-lg py-4">
+                EDIT PROFILE
+              </button>
             </Link>
-          </Card>
+          </div>
         </div>
 
         {/* Recent Activity */}
-        <Card className="p-6 mt-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h2>
-          <div className="text-center py-8">
-            <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            <p className="text-gray-500">No trips yet</p>
-            <p className="text-sm text-gray-400 mt-1">
-              Start planning your first sustainable trip to see your activity here.
-            </p>
+        <div className="card-brutal">
+          <h2 className="heading-brutal text-3xl mb-6">RECENT ACTIVITY</h2>
+          <div className="text-center py-12">
+            <div className="card-yellow inline-block p-8 mb-6">
+              <svg className="w-16 h-16 text-neo-black mx-auto" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <h3 className="heading-brutal text-2xl mb-4">NO TRIPS YET</h3>
+            <div className="card-pink inline-block px-6 py-3">
+              <p className="text-brutal">START PLANNING YOUR FIRST SUSTAINABLE TRIP</p>
+            </div>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   )

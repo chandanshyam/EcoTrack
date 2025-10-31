@@ -1,11 +1,11 @@
 // Environment variable validation and access
 export const env = {
-  // Google APIs
-  GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY || '',
-  GOOGLE_PLACES_API_KEY: process.env.GOOGLE_PLACES_API_KEY || '',
+  // Google APIs (client-side accessible)
+  GOOGLE_MAPS_API_KEY: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || process.env.GOOGLE_MAPS_API_KEY || '',
+  GOOGLE_PLACES_API_KEY: process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY || process.env.GOOGLE_PLACES_API_KEY || '',
   
-  // Gemini AI
-  GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
+  // Gemini AI (client-side accessible)
+  GEMINI_API_KEY: process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY || '',
   
   // Firebase/Firestore
   FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID || '',

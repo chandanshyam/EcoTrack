@@ -8,31 +8,68 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'eco-green': {
-          50: '#f0fdf4',
-          100: '#dcfce7',
-          200: '#bbf7d0',
-          300: '#86efac',
-          400: '#4ade80',
-          500: '#22c55e',
-          600: '#16a34a',
-          700: '#15803d',
-          800: '#166534',
-          900: '#14532d',
+        // Vibrant NeoBrutalism Color Palette (from design)
+        'neo': {
+          'black': '#000000',
+          'dark-bg': '#2D2D2D',
+          'white': '#FFFFFF',
+          'lime': '#BFFF00',        // Primary vibrant green
+          'teal': '#00BCD4',         // Low carbon category
+          'olive': '#697B42',        // Public transport
+          'forest': '#3D7D5C',       // Alternative green
+          'coral': '#FF6B4A',        // Bike friendly
+          'mustard': '#E5A82D',      // Walkable cities
+          'cyan': '#00E5FF',
+          'red': '#FF3D3D',
+          'blue': '#4A90E2',
+          'orange': '#FF8C42',
+          'purple': '#A855F7',
+          'gray': '#6B7280',
         },
-        'carbon-gray': {
-          50: '#f9fafb',
-          100: '#f3f4f6',
-          200: '#e5e7eb',
-          300: '#d1d5db',
-          400: '#9ca3af',
-          500: '#6b7280',
-          600: '#4b5563',
-          700: '#374151',
-          800: '#1f2937',
-          900: '#111827',
+        // Vibrant Eco-friendly variants
+        'eco-brutal': {
+          'primary': '#BFFF00',      // Lime green
+          'secondary': '#E5A82D',     // Mustard
+          'accent': '#00BCD4',        // Teal
+          'dark': '#2D2D2D',
+          'darker': '#1A1A1A',
+          'light': '#FFFFFF',
+          'gray': '#6B7280',
         }
       },
+      fontFamily: {
+        'mono': ['JetBrains Mono', 'Courier New', 'monospace'],
+        'sans': ['Inter', 'Arial', 'sans-serif'],
+      },
+      boxShadow: {
+        'brutal': '8px 8px 0px 0px #000000',
+        'brutal-sm': '4px 4px 0px 0px #000000',
+        'brutal-lg': '12px 12px 0px 0px #000000',
+        'brutal-color': '8px 8px 0px 0px',
+      },
+      borderWidth: {
+        '3': '3px',
+        '4': '4px',
+        '5': '5px',
+      },
+      animation: {
+        'glitch': 'glitch 0.3s ease-in-out infinite alternate',
+        'bounce-brutal': 'bounce-brutal 1s ease-in-out infinite',
+      },
+      keyframes: {
+        glitch: {
+          '0%': { transform: 'translate(0)' },
+          '20%': { transform: 'translate(-2px, 2px)' },
+          '40%': { transform: 'translate(-2px, -2px)' },
+          '60%': { transform: 'translate(2px, 2px)' },
+          '80%': { transform: 'translate(2px, -2px)' },
+          '100%': { transform: 'translate(0)' },
+        },
+        'bounce-brutal': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
+        }
+      }
     },
   },
   plugins: [],
