@@ -1,4 +1,5 @@
-// Carbon emission factors (kg CO2e per km)
+// Basic carbon emission factors (kg CO2e per km) - for backward compatibility
+// For detailed calculations, use CarbonCalculationService
 export const CARBON_EMISSION_FACTORS = {
   car: 0.21,
   train: 0.041,
