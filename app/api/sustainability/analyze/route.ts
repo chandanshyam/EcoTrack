@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { routes: googleRoutes, travelDate } = validation.data!;
+    const { routes: googleRoutes } = validation.data!;
 
     // Convert Google Maps routes to RouteOption format
     // For this analysis, we'll use placeholder origin/destination
