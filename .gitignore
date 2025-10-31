@@ -41,3 +41,5 @@ next-env.d.ts
 *.njsproj
 *.sln
 *.sw?
+.kiro/*
+ecotrack-3e3e0-firebase-adminsdk-fbsvc-0bf2b9bd36.json
