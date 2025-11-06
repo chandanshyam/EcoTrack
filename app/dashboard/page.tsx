@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import Header from '@/components/Header'
+import SustainabilityDashboard from '@/components/SustainabilityDashboard'
 import Link from 'next/link'
 
 export default function DashboardPage() {
@@ -52,38 +53,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <div className="card-green text-center">
-            <div className="mb-4">
-              <svg className="w-12 h-12 mx-auto text-neo-black" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <p className="text-brutal text-sm mb-2">TOTAL TRIPS</p>
-            <p className="heading-brutal text-4xl">0</p>
-          </div>
-
-          <div className="card-cyan text-center">
-            <div className="mb-4">
-              <svg className="w-12 h-12 mx-auto text-neo-black" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-              </svg>
-            </div>
-            <p className="text-brutal text-sm mb-2">CO₂ SAVED</p>
-            <p className="heading-brutal text-4xl">0 KG</p>
-          </div>
-
-          <div className="card-pink text-center">
-            <div className="mb-4">
-              <svg className="w-12 h-12 mx-auto text-neo-black" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-            <p className="text-brutal text-sm mb-2">AVG. SUSTAINABILITY</p>
-            <p className="heading-brutal text-4xl">--</p>
-          </div>
-        </div>
+        {/* Sustainability Dashboard */}
+        <SustainabilityDashboard className="mb-12" />
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
@@ -112,19 +83,39 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Recent Activity */}
+        {/* Quick Actions */}
         <div className="card-brutal">
-          <h2 className="heading-brutal text-3xl mb-6">RECENT ACTIVITY</h2>
-          <div className="text-center py-12">
-            <div className="card-yellow inline-block p-8 mb-6">
-              <svg className="w-16 h-16 text-neo-black mx-auto" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            </div>
-            <h3 className="heading-brutal text-2xl mb-4">NO TRIPS YET</h3>
-            <div className="card-pink inline-block px-6 py-3">
-              <p className="text-brutal">START PLANNING YOUR FIRST SUSTAINABLE TRIP</p>
-            </div>
+          <h2 className="heading-brutal text-3xl mb-6">QUICK ACTIONS</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Link href="/" className="block">
+              <div className="card-green p-6 text-center hover:translate-x-1 hover:translate-y-1 transition-transform">
+                <svg className="w-12 h-12 mx-auto text-neo-black mb-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                </svg>
+                <h3 className="heading-brutal text-lg mb-2">PLAN TRIP</h3>
+                <p className="text-brutal text-sm">Find sustainable routes</p>
+              </div>
+            </Link>
+            
+            <Link href="/history" className="block">
+              <div className="card-cyan p-6 text-center hover:translate-x-1 hover:translate-y-1 transition-transform">
+                <svg className="w-12 h-12 mx-auto text-neo-black mb-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 className="heading-brutal text-lg mb-2">VIEW HISTORY</h3>
+                <p className="text-brutal text-sm">Review past trips</p>
+              </div>
+            </Link>
+            
+            <Link href="/profile" className="block">
+              <div className="card-yellow p-6 text-center hover:translate-x-1 hover:translate-y-1 transition-transform">
+                <svg className="w-12 h-12 mx-auto text-neo-black mb-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                </svg>
+                <h3 className="heading-brutal text-lg mb-2">PROFILE</h3>
+                <p className="text-brutal text-sm">Manage preferences</p>
+              </div>
+            </Link>
           </div>
         </div>
       </div>

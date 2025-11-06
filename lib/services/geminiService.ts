@@ -323,14 +323,20 @@ export const planTripWithAI = async (
     // Enhance routes with advanced carbon calculations and sustainability scoring
     const enhancedRoutes = CarbonCalculationService.processRouteOptions(googleRoutes);
 
-    // Sort routes by sustainability score (highest first)
-    const sortedRoutes = enhancedRoutes.sort((a, b) => b.sustainabilityScore - a.sustainabilityScore);
+    // Routes are already sorted by the API based on user preferences
+    // Only re-sort if user prioritizes sustainability (default behavior)
+    let finalRoutes = enhancedRoutes;
+    if (preferences?.prioritizeSustainability !== false) {
+      // Re-sort by sustainability score for consistency
+      finalRoutes = enhancedRoutes.sort((a, b) => b.sustainabilityScore - a.sustainabilityScore);
+    }
+    // Otherwise keep the API's sorting (by cost/time if prioritizeSustainability is false)
 
-    // Generate AI-powered sustainability analysis
-    const analysis = await analyzeSustainability(sortedRoutes, origin, destination);
+    // Generate AI-powered sustainability analysis with preference context
+    const analysis = await analyzeSustainability(finalRoutes, origin, destination);
 
     return {
-      routes: sortedRoutes,
+      routes: finalRoutes,
       analysis
     };
 

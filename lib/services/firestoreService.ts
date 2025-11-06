@@ -3,13 +3,13 @@
 // import { getFirestore, Firestore, Timestamp } from 'firebase-admin/firestore';
 import { User, CompletedTrip, RouteOption, EnvironmentalMetrics, TrendData } from '@/lib/types';
 
-// Firebase Admin SDK types and interfaces
-interface Firestore {
+// Firebase Admin SDK types
+type Firestore = {
   collection(path: string): any;
   batch(): any;
 }
 
-interface Timestamp {
+type Timestamp = {
   toDate(): Date;
   toMillis(): number;
 }
@@ -462,6 +462,74 @@ class FirestoreService {
     } catch (error) {
       console.error('Error getting cached route:', error);
       return null;
+    }
+  }
+
+  /**
+   * User preferences management
+   */
+  async getUserPreferences(email: string): Promise<any | null> {
+    try {
+      const usersQuery = this.db.collection('users').where('email', '==', email);
+      const snapshot = await usersQuery.get();
+      
+      if (snapshot.empty) {
+        return null;
+      }
+      
+      const userDoc = snapshot.docs[0];
+      const data = userDoc.data();
+      
+      return data.preferences || null;
+    } catch (error) {
+      console.error('Error getting user preferences:', error);
+      throw new Error('Failed to get user preferences');
+    }
+  }
+
+  async saveUserPreferences(email: string, preferences: any): Promise<void> {
+    try {
+      const usersQuery = this.db.collection('users').where('email', '==', email);
+      const snapshot = await usersQuery.get();
+      
+      if (snapshot.empty) {
+        // Create new user with preferences
+        const userRef = this.db.collection('users').doc();
+        await userRef.set({
+          email,
+          preferences,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      } else {
+        // Update existing user preferences
+        const userDoc = snapshot.docs[0];
+        await userDoc.ref.update({
+          preferences,
+          updatedAt: new Date(),
+        });
+      }
+    } catch (error) {
+      console.error('Error saving user preferences:', error);
+      throw new Error('Failed to save user preferences');
+    }
+  }
+
+  async deleteUserPreferences(email: string): Promise<void> {
+    try {
+      const usersQuery = this.db.collection('users').where('email', '==', email);
+      const snapshot = await usersQuery.get();
+      
+      if (!snapshot.empty) {
+        const userDoc = snapshot.docs[0];
+        await userDoc.ref.update({
+          preferences: null,
+          updatedAt: new Date(),
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting user preferences:', error);
+      throw new Error('Failed to delete user preferences');
     }
   }
 

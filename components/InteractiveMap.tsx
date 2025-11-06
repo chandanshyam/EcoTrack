@@ -50,6 +50,46 @@ const TRANSPORT_MODE_ICONS: Record<TransportMode, string> = {
   [TransportMode.METRO]: '🚇',
 };
 
+// Utility function to decode Google Maps encoded polyline
+function decodePolyline(encoded: string): google.maps.LatLngLiteral[] {
+  const poly: google.maps.LatLngLiteral[] = [];
+  let index = 0;
+  const len = encoded.length;
+  let lat = 0;
+  let lng = 0;
+
+  while (index < len) {
+    let b: number;
+    let shift = 0;
+    let result = 0;
+
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+
+    const dlat = (result & 1) !== 0 ? ~(result >> 1) : result >> 1;
+    lat += dlat;
+
+    shift = 0;
+    result = 0;
+
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+
+    const dlng = (result & 1) !== 0 ? ~(result >> 1) : result >> 1;
+    lng += dlng;
+
+    poly.push({ lat: lat / 1e5, lng: lng / 1e5 });
+  }
+
+  return poly;
+}
+
 export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   routes,
   selectedRouteId,
@@ -64,7 +104,14 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const createMap = useCallback(() => {
-    if (!mapRef.current || !window.google) return;
+    if (!mapRef.current || !window.google || !window.google.maps) return;
+
+    // Ensure MapTypeId is available (fixes race condition)
+    if (!google.maps.MapTypeId || !google.maps.Map) {
+      console.warn('Google Maps not fully loaded yet, retrying...');
+      setTimeout(createMap, 100);
+      return;
+    }
 
     try {
       // Default center (will be adjusted based on routes)
@@ -300,46 +347,56 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         { marker: destinationMarker, infoWindow: destinationInfoWindow }
       );
 
-      // Create route polyline with transport mode segments
-      route.transportModes.forEach((segment, segmentIndex) => {
-        const color = TRANSPORT_MODE_COLORS[segment.mode] || '#666666';
+      // Create route polyline - use actual path from Google Maps if available
+      const color = TRANSPORT_MODE_COLORS[route.transportModes[0]?.mode] || '#666666';
 
-        // For simplicity, we'll create a straight line between origin and destination
-        // In a real implementation, you'd use the actual route geometry from Google Maps Directions API
-        const path = [route.origin.coordinates, route.destination.coordinates];
+      // Decode polyline if available, otherwise use straight line
+      let path: google.maps.LatLngLiteral[];
+      if (route.polyline) {
+        try {
+          path = decodePolyline(route.polyline);
+          console.log(`Decoded polyline for ${route.name}: ${path.length} points`);
+        } catch (error) {
+          console.warn('Failed to decode polyline, using straight line:', error);
+          path = [route.origin.coordinates, route.destination.coordinates];
+        }
+      } else {
+        // Fallback to straight line if no polyline data
+        path = [route.origin.coordinates, route.destination.coordinates];
+      }
 
-        const polyline = new google.maps.Polyline({
-          path: path,
-          geodesic: true,
-          strokeColor: color,
-          strokeOpacity: opacity,
-          strokeWeight: isSelected ? 6 : 4,
-          zIndex: zIndex,
-        });
-
-        polyline.setMap(mapInstanceRef.current);
-
-        // Add click listener to polyline
-        polyline.addListener('click', (event: google.maps.MapMouseEvent) => {
-          if (onRouteSelect) {
-            onRouteSelect(route.id);
-          }
-
-          // Show route info at click position
-          const infoWindow = new google.maps.InfoWindow({
-            content: createSustainabilityInfoContent(route),
-            position: event.latLng,
-          });
-
-          infoWindow.open(mapInstanceRef.current);
-        });
-
-        polylinesRef.current.push({ polyline, routeId: route.id });
+      const polyline = new google.maps.Polyline({
+        path: path,
+        geodesic: true,
+        strokeColor: color,
+        strokeOpacity: opacity,
+        strokeWeight: isSelected ? 6 : 4,
+        zIndex: zIndex,
       });
 
-      // Extend bounds
-      bounds.extend(route.origin.coordinates);
-      bounds.extend(route.destination.coordinates);
+      polyline.setMap(mapInstanceRef.current);
+
+      // Add click listener to polyline
+      polyline.addListener('click', (event: google.maps.MapMouseEvent) => {
+        if (onRouteSelect) {
+          onRouteSelect(route.id);
+        }
+
+        // Show route info at click position
+        const infoWindow = new google.maps.InfoWindow({
+          content: createSustainabilityInfoContent(route),
+          position: event.latLng,
+        });
+
+        infoWindow.open(mapInstanceRef.current);
+      });
+
+      polylinesRef.current.push({ polyline, routeId: route.id });
+
+      // Extend bounds to include all points in the path
+      path.forEach(point => {
+        bounds.extend(point);
+      });
 
       routeIndex++;
     });

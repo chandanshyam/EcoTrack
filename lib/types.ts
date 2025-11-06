@@ -8,7 +8,7 @@ export enum TransportMode {
   METRO = 'metro',
 }
 
-export interface TransportSegment {
+export type TransportSegment = {
   mode: TransportMode;
   duration: number; // minutes
   distance: number; // kilometers
@@ -17,7 +17,7 @@ export interface TransportSegment {
   provider?: string;
 }
 
-export interface RouteOption {
+export type RouteOption = {
   id: string;
   name: string;
   origin: Location;
@@ -28,9 +28,10 @@ export interface RouteOption {
   totalCost: number;
   totalCarbonFootprint: number; // kg CO2e
   sustainabilityScore: number; // 0-100
+  polyline?: string; // Encoded polyline from Google Maps API
 }
 
-export interface Location {
+export type Location = {
   address: string;
   coordinates: {
     lat: number;
@@ -38,7 +39,7 @@ export interface Location {
   };
 }
 
-export interface SustainabilityAnalysis {
+export type SustainabilityAnalysis = {
   summary: string;
   tips: string[];
   comparison: {
@@ -48,7 +49,7 @@ export interface SustainabilityAnalysis {
   };
 }
 
-export interface User {
+export type User = {
   id: string;
   email: string;
   name?: string;
@@ -57,14 +58,14 @@ export interface User {
   updatedAt?: Date;
 }
 
-export interface UserPreferences {
+export type UserPreferences = {
   prioritizeSustainability: boolean;
   maxTravelTime?: number;
   budgetLimit?: number;
   preferredTransportModes: TransportMode[];
 }
 
-export interface CompletedTrip {
+export type CompletedTrip = {
   id: string;
   userId: string;
   route: RouteOption;
@@ -73,13 +74,13 @@ export interface CompletedTrip {
   carbonSaved: number;
 }
 
-export interface GeolocationCoords {
+export type GeolocationCoords = {
   latitude: number;
   longitude: number;
 }
 
 // API Request/Response types
-export interface RoutePlanRequest {
+export type RoutePlanRequest = {
   origin: string;
   destination: string;
   travelDate?: string;
@@ -90,43 +91,43 @@ export interface RoutePlanRequest {
   };
 }
 
-export interface RoutePlanResponse {
+export type RoutePlanResponse = {
   routes: RouteOption[];
   sustainabilityInsights: string;
   conventionalComparison: ComparisonData;
 }
 
-export interface SustainabilityAnalysisRequest {
+export type SustainabilityAnalysisRequest = {
   routes: GoogleMapsRoute[];
   travelDate: string;
 }
 
-export interface SustainabilityAnalysisResponse {
+export type SustainabilityAnalysisResponse = {
   analysis: RouteAnalysis[];
   aiInsights: string;
   recommendations: string[];
 }
 
-export interface TravelHistoryRequest {
+export type TravelHistoryRequest = {
   userId: string;
   dateRange?: { start: Date; end: Date };
 }
 
-export interface TravelHistoryResponse {
+export type TravelHistoryResponse = {
   trips: CompletedTrip[];
   cumulativeImpact: EnvironmentalMetrics;
   trends: TrendData[];
 }
 
 // Supporting types
-export interface ComparisonData {
+export type ComparisonData = {
   conventionalMethod: string;
   conventionalFootprint: number;
   savings: string;
   savingsPercentage: number;
 }
 
-export interface RouteAnalysis {
+export type RouteAnalysis = {
   routeId: string;
   sustainabilityScore: number;
   carbonFootprint: number;
@@ -134,14 +135,14 @@ export interface RouteAnalysis {
   recommendations: string[];
 }
 
-export interface EnvironmentalMetrics {
+export type EnvironmentalMetrics = {
   totalCarbonFootprint: number;
   totalCarbonSaved: number;
   totalTrips: number;
   averageSustainabilityScore: number;
 }
 
-export interface TrendData {
+export type TrendData = {
   period: string;
   carbonFootprint: number;
   carbonSaved: number;
@@ -149,7 +150,7 @@ export interface TrendData {
 }
 
 // Google Maps API types (simplified)
-export interface GoogleMapsRoute {
+export type GoogleMapsRoute = {
   legs: GoogleMapsLeg[];
   overview_polyline: {
     points: string;
@@ -158,7 +159,7 @@ export interface GoogleMapsRoute {
   warnings: string[];
 }
 
-export interface GoogleMapsLeg {
+export type GoogleMapsLeg = {
   distance: {
     text: string;
     value: number;

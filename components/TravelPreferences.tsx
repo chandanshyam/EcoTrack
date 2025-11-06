@@ -3,14 +3,14 @@
 import React from 'react';
 import { TransportMode } from '@/lib/types';
 
-export interface TravelPreferencesData {
+export type TravelPreferencesData = {
   prioritizeSustainability: boolean;
   maxTravelTime?: number;
   budgetLimit?: number;
   preferredTransportModes: TransportMode[];
 }
 
-interface TravelPreferencesProps {
+type TravelPreferencesProps = {
   preferences: TravelPreferencesData;
   onChange: (preferences: TravelPreferencesData) => void;
   disabled?: boolean;
@@ -49,10 +49,12 @@ export const TravelPreferences: React.FC<TravelPreferencesProps> = ({
   };
 
   const handleMaxTravelTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value ? parseInt(e.target.value) : undefined;
+    const hours = e.target.value ? parseFloat(e.target.value) : undefined;
+    // Convert hours to minutes for the API
+    const minutes = hours ? Math.round(hours * 60) : undefined;
     onChange({
       ...preferences,
-      maxTravelTime: value
+      maxTravelTime: minutes
     });
   };
 
@@ -94,7 +96,7 @@ export const TravelPreferences: React.FC<TravelPreferencesProps> = ({
               checked={preferences.prioritizeSustainability}
               onChange={handleSustainabilityToggle}
               disabled={disabled}
-              className="w-6 h-6 border-4 border-neo-black bg-neo-white checked:bg-neo-green focus:outline-none focus:ring-4 focus:ring-neo-yellow"
+              className="w-6 h-6 border-4 border-neo-black bg-neo-white checked:bg-neo-lime focus:outline-none focus:ring-4 focus:ring-neo-yellow cursor-pointer"
             />
             <span className="text-brutal text-lg uppercase">
               PRIORITIZE ECO-FRIENDLY OPTIONS
@@ -113,10 +115,10 @@ export const TravelPreferences: React.FC<TravelPreferencesProps> = ({
           <input
             id="maxTravelTime"
             type="number"
-            min="1"
+            min="0.5"
             max="48"
             step="0.5"
-            value={preferences.maxTravelTime || ''}
+            value={preferences.maxTravelTime ? (preferences.maxTravelTime / 60).toString() : ''}
             onChange={handleMaxTravelTimeChange}
             placeholder="NO LIMIT"
             disabled={disabled}
@@ -153,18 +155,33 @@ export const TravelPreferences: React.FC<TravelPreferencesProps> = ({
           <h4 className="text-brutal text-lg mb-4 uppercase">
             PREFERRED TRANSPORT MODES
           </h4>
+          <p className="text-sm font-mono mb-3 text-gray-600">
+            CLICK TO TOGGLE TRANSPORT OPTIONS (SELECTED = GREEN)
+          </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {Object.values(TransportMode).map((mode) => {
+            {[
+              TransportMode.WALK,
+              TransportMode.BIKE,
+              TransportMode.BUS,
+              TransportMode.TRAIN,
+              TransportMode.METRO,
+              TransportMode.CAR,
+              TransportMode.PLANE
+            ].map((mode) => {
               const isSelected = preferences.preferredTransportModes.includes(mode);
               return (
                 <button
                   key={mode}
                   type="button"
-                  onClick={() => handleTransportModeToggle(mode)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleTransportModeToggle(mode);
+                  }}
                   disabled={disabled}
                   className={`p-3 border-4 border-neo-black font-mono font-bold text-sm uppercase transition-all duration-150 ${
                     isSelected
-                      ? 'bg-neo-green text-neo-black shadow-brutal-sm translate-x-1 translate-y-1'
+                      ? 'bg-neo-lime text-neo-black shadow-brutal-sm translate-x-1 translate-y-1'
                       : 'bg-neo-white text-neo-black hover:bg-neo-yellow hover:translate-x-1 hover:translate-y-1 hover:shadow-brutal-sm'
                   } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 >
@@ -179,7 +196,7 @@ export const TravelPreferences: React.FC<TravelPreferencesProps> = ({
             })}
           </div>
           <p className="text-sm font-mono mt-3 text-gray-600">
-            SELECT YOUR PREFERRED TRANSPORT OPTIONS
+            SELECTED: {preferences.preferredTransportModes.length} MODE(S)
           </p>
         </div>
       </div>

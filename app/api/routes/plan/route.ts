@@ -90,7 +90,7 @@ const COST_FACTORS = {
 
 export async function POST(request: NextRequest) {
   try {
-    const { origin, destination } = await request.json()
+    const { origin, destination, preferences } = await request.json()
 
     if (!origin || !destination) {
       return NextResponse.json(
@@ -113,8 +113,11 @@ export async function POST(request: NextRequest) {
       geocodeAddress(destination, apiKey)
     ])
 
-    // Calculate routes for different transport modes
-    const transportModes = [TransportMode.CAR, TransportMode.TRAIN, TransportMode.BUS]
+    // Use user's preferred transport modes, or default to all common modes
+    const transportModes = preferences?.preferredTransportModes && preferences.preferredTransportModes.length > 0
+      ? preferences.preferredTransportModes
+      : [TransportMode.CAR, TransportMode.TRAIN, TransportMode.BUS, TransportMode.WALK, TransportMode.BIKE]
+
     const routes: RouteOption[] = []
 
     for (const mode of transportModes) {
@@ -129,10 +132,33 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Sort by sustainability score (highest first)
-    routes.sort((a, b) => b.sustainabilityScore - a.sustainabilityScore)
+    // Filter routes based on user preferences
+    let filteredRoutes = routes
 
-    return NextResponse.json({ routes })
+    // Filter by maxTravelTime if specified
+    if (preferences?.maxTravelTime) {
+      filteredRoutes = filteredRoutes.filter(route => route.totalDuration <= preferences.maxTravelTime!)
+    }
+
+    // Filter by budgetLimit if specified
+    if (preferences?.budgetLimit) {
+      filteredRoutes = filteredRoutes.filter(route => route.totalCost <= preferences.budgetLimit!)
+    }
+
+    // Sort routes based on user preferences
+    if (preferences?.prioritizeSustainability !== false) {
+      // Default: Sort by sustainability score (highest first)
+      filteredRoutes.sort((a, b) => b.sustainabilityScore - a.sustainabilityScore)
+    } else {
+      // If user doesn't prioritize sustainability, sort by cost first, then time
+      filteredRoutes.sort((a, b) => {
+        const costDiff = a.totalCost - b.totalCost
+        if (Math.abs(costDiff) > 1) return costDiff // Sort by cost if difference > $1
+        return a.totalDuration - b.totalDuration // Then by duration
+      })
+    }
+
+    return NextResponse.json({ routes: filteredRoutes })
   } catch (error) {
     console.error('Error planning routes:', error)
     return NextResponse.json(
@@ -195,6 +221,7 @@ async function calculateRoute(
 ): Promise<RouteOption | null> {
   let distanceKm: number
   let durationMinutes: number
+  let polyline: string | undefined
 
   // Try real API first, fall back to mock data
   try {
@@ -212,6 +239,7 @@ async function calculateRoute(
       const googleRoute = data.routes[0]
       distanceKm = googleRoute.distance.value / 1000
       durationMinutes = googleRoute.duration.value / 60
+      polyline = googleRoute.overview_polyline.points // Capture the polyline
     } else {
       throw new Error(`Directions API failed: ${data.error_message || data.status}`)
     }
@@ -269,6 +297,7 @@ async function calculateRoute(
     totalCost: cost,
     totalCarbonFootprint: carbonEmission,
     sustainabilityScore,
+    polyline, // Include the polyline for map rendering
   }
 }
 

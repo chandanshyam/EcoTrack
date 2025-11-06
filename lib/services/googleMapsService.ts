@@ -307,8 +307,32 @@ class GoogleMapsService {
 
   /**
    * Get place suggestions for autocomplete
+   * Client-side: uses API route to avoid CORS
+   * Server-side: calls Google Places API directly
    */
   async getPlaceSuggestions(input: string, location?: { lat: number; lng: number }): Promise<string[]> {
+    // Check if running on server or client
+    const isServer = typeof window === 'undefined';
+
+    if (!isServer) {
+      // Client-side: use API route to avoid CORS
+      try {
+        const params = new URLSearchParams({ input });
+        if (location) {
+          params.append('lat', location.lat.toString());
+          params.append('lng', location.lng.toString());
+        }
+
+        const response = await fetch(`/api/places/autocomplete?${params}`);
+        const data = await response.json();
+        return data.suggestions || [];
+      } catch (error) {
+        console.error('Place autocomplete error:', error);
+        return [];
+      }
+    }
+
+    // Server-side: direct API call
     this.checkApiKey();
     const url = `${this.baseUrl}/place/autocomplete/json?` +
       `input=${encodeURIComponent(input)}&` +
@@ -319,12 +343,12 @@ class GoogleMapsService {
     try {
       const response = await fetch(url);
       const data = await response.json();
-      
+
       if (data.status !== 'OK') {
         console.warn('Place autocomplete failed:', data.error_message || data.status);
         return [];
       }
-      
+
       return data.predictions.map((prediction: any) => prediction.description);
     } catch (error) {
       console.error('Place autocomplete error:', error);

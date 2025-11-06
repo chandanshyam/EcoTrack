@@ -33,6 +33,9 @@ export default function Header() {
                 <Link href="/profile" className="btn-secondary text-sm py-2 px-4 hover:bg-neo-orange transition-colors">
                   PROFILE
                 </Link>
+                <Link href="/preferences" className="btn-secondary text-sm py-2 px-4 hover:bg-neo-yellow transition-colors">
+                  SETTINGS
+                </Link>
               </>
             )}
           </nav>
@@ -69,7 +72,7 @@ export default function Header() {
                 onClick={() => signIn()}
                 className="bg-neo-lime border-4 border-neo-black shadow-brutal text-neo-black font-bold uppercase tracking-wide py-3 px-8 text-base transition-all duration-200 hover:translate-x-1 hover:translate-y-1 hover:shadow-brutal-sm active:translate-x-2 active:translate-y-2 active:shadow-none"
               >
-                SIGN IN
+                SIGN IN/UP
               </button>
             )}
           </div>
