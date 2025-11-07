@@ -147,7 +147,6 @@ export async function POST(request: NextRequest) {
 
     // Generate comprehensive recommendations
     const recommendations: string[] = [
-      ...sustainabilityAnalysis.tips,
       `Average sustainability score: ${averageSustainabilityScore.toFixed(1)}/100`,
       `Total estimated carbon footprint: ${totalCarbonFootprint.toFixed(2)} kg CO2e`
     ];

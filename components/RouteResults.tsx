@@ -1,8 +1,10 @@
 import React, { useState, useMemo } from 'react';
+import { useSession } from 'next-auth/react';
 import { RouteOption, SustainabilityAnalysis, TransportMode } from '@/lib/types';
 import { RouteCard } from '@/components/RouteCard';
 import { InteractiveMap } from '@/components/InteractiveMap';
 import { FilterControls, FilterOptions, SortOption } from '@/components/FilterControls';
+import { ToastContainer, ToastType } from '@/components/Toast';
 
 type RouteResultsProps = {
   routes: RouteOption[];
@@ -20,14 +22,17 @@ const LoadingSkeleton: React.FC = () => (
   </div>
 );
 
-export const RouteResults: React.FC<RouteResultsProps> = ({ 
-  routes, 
-  analysis, 
-  isLoading, 
-  error, 
-  hasSearched 
+export const RouteResults: React.FC<RouteResultsProps> = ({
+  routes,
+  analysis,
+  isLoading,
+  error,
+  hasSearched
 }) => {
+  const { data: session } = useSession();
   const [selectedRouteId, setSelectedRouteId] = useState<string | undefined>();
+  const [savingRouteId, setSavingRouteId] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: ToastType }>>([]);
   const [filters, setFilters] = useState<FilterOptions>({
     sortBy: 'sustainability',
     sortOrder: 'desc',
@@ -40,6 +45,59 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
 
   const handleRouteSelect = (routeId: string) => {
     setSelectedRouteId(routeId);
+  };
+
+  const addToast = (message: string, type: ToastType) => {
+    const id = Date.now().toString();
+    setToasts(prev => [...prev, { id, message, type }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
+
+  const handleSaveTrip = async (route: RouteOption) => {
+    if (!session?.user?.email) {
+      addToast('Please sign in to save trips', 'warning');
+      return;
+    }
+
+    setSavingRouteId(route.id);
+
+    try {
+      // Calculate carbon saved compared to car
+      const carEmissionFactor = 0.2; // kg CO2 per km for average car
+      const carFootprint = route.totalDistance * carEmissionFactor;
+      const carbonSaved = Math.max(0, carFootprint - route.totalCarbonFootprint);
+
+      const response = await fetch('/api/user/history', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          route,
+          carbonFootprint: route.totalCarbonFootprint,
+          carbonSaved,
+          completedAt: new Date().toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save trip');
+      }
+
+      addToast('Trip saved successfully! Check your history.', 'success');
+    } catch (error) {
+      console.error('Error saving trip:', error);
+      addToast(
+        error instanceof Error ? error.message : 'Failed to save trip. Please try again.',
+        'error'
+      );
+    } finally {
+      setSavingRouteId(null);
+    }
   };
 
   // Filter and sort routes based on current filters
@@ -176,19 +234,7 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
               <div className="card-brutal">
                 <p className="text-brutal text-lg">{analysis.summary}</p>
               </div>
-              
-              <div className="card-cyan">
-                <h3 className="heading-brutal text-lg mb-4">PRO TIPS</h3>
-                <ul className="space-y-2">
-                  {analysis.tips.map((tip, index) => (
-                    <li key={index} className="flex items-start space-x-3">
-                      <span className="card-yellow px-2 py-1 text-brutal text-sm">{index + 1}</span>
-                      <span className="text-brutal">{tip}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              
+
               {analysis.comparison && (
                 <div className="card-pink">
                   <h3 className="heading-brutal text-lg mb-4">COMPARISON</h3>
@@ -250,19 +296,7 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
             <div className="card-brutal">
               <p className="text-brutal text-lg">{analysis.summary}</p>
             </div>
-            
-            <div className="card-cyan">
-              <h3 className="heading-brutal text-lg mb-4">PRO TIPS</h3>
-              <ul className="space-y-2">
-                {analysis.tips.map((tip, index) => (
-                  <li key={index} className="flex items-start space-x-3">
-                    <span className="card-yellow px-2 py-1 text-brutal text-sm">{index + 1}</span>
-                    <span className="text-brutal">{tip}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            
+
             {analysis.comparison && (
               <div className="card-pink">
                 <h3 className="heading-brutal text-lg mb-4">COMPARISON</h3>
@@ -320,16 +354,22 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
         
         <div className="space-y-6">
           {filteredAndSortedRoutes.map((route, index) => (
-            <RouteCard 
-              key={route.id} 
-              route={route} 
+            <RouteCard
+              key={route.id}
+              route={route}
               isBestOption={index === 0 && filters.sortBy === 'sustainability' && filters.sortOrder === 'desc'}
               isSelected={selectedRouteId === route.id}
               onSelect={() => handleRouteSelect(route.id)}
+              onSave={handleSaveTrip}
+              isSaving={savingRouteId === route.id}
+              isAuthenticated={!!session}
             />
           ))}
         </div>
       </div>
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   );
 };

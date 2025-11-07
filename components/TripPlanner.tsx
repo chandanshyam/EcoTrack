@@ -27,7 +27,7 @@ export const TripPlanner: React.FC<TripPlannerProps> = ({ onPlanTrip, isLoading 
     prioritizeSustainability: true,
     maxTravelTime: undefined,
     budgetLimit: undefined,
-    preferredTransportModes: [TransportMode.TRAIN, TransportMode.BUS, TransportMode.WALK, TransportMode.BIKE]
+    preferredTransportModes: [TransportMode.CAR, TransportMode.TRAIN, TransportMode.BUS, TransportMode.PLANE]
   });
 
   const { 
@@ -147,9 +147,12 @@ export const TripPlanner: React.FC<TripPlannerProps> = ({ onPlanTrip, isLoading 
             onChange={setTravelDate}
             disabled={isLoading}
           />
-          
+
           {/* Preferences Toggle */}
-          <div className="flex items-end">
+          <div>
+            <label className="block text-brutal text-lg mb-3 uppercase">
+              PREFERENCES
+            </label>
             <button
               type="button"
               onClick={() => setShowPreferences(!showPreferences)}
@@ -158,6 +161,9 @@ export const TripPlanner: React.FC<TripPlannerProps> = ({ onPlanTrip, isLoading 
             >
               {showPreferences ? 'HIDE PREFERENCES' : 'SHOW PREFERENCES'}
             </button>
+            <div className="mt-2 text-sm font-mono text-gray-600">
+              CUSTOMIZE TRAVEL OPTIONS
+            </div>
           </div>
         </div>
 

@@ -30,8 +30,8 @@ export default function Header() {
                 <Link href="/dashboard" className="btn-secondary text-sm py-2 px-4 hover:bg-neo-pink transition-colors">
                   DASHBOARD
                 </Link>
-                <Link href="/profile" className="btn-secondary text-sm py-2 px-4 hover:bg-neo-orange transition-colors">
-                  PROFILE
+                <Link href="/history" className="btn-secondary text-sm py-2 px-4 hover:bg-neo-orange transition-colors">
+                  HISTORY
                 </Link>
                 <Link href="/preferences" className="btn-secondary text-sm py-2 px-4 hover:bg-neo-yellow transition-colors">
                   SETTINGS
@@ -48,18 +48,15 @@ export default function Header() {
               </div>
             ) : session ? (
               <div className="flex items-center space-x-3">
-                <div className="bg-neo-teal border-4 border-neo-black shadow-brutal-sm p-2 flex items-center space-x-2">
-                  {session.user.image && (
+                {session.user.image && (
+                  <Link href="/profile" className="bg-neo-teal border-4 border-neo-black shadow-brutal-sm p-2 hover:translate-x-1 hover:translate-y-1 transition-transform">
                     <img
                       src={session.user.image}
                       alt={session.user.name || 'User'}
                       className="w-8 h-8 border-2 border-neo-black"
                     />
-                  )}
-                  <span className="text-brutal text-sm text-neo-black">
-                    {session.user.name?.toUpperCase()}
-                  </span>
-                </div>
+                  </Link>
+                )}
                 <button
                   onClick={() => signOut()}
                   className="bg-neo-red border-4 border-neo-black shadow-brutal-sm text-neo-white font-bold uppercase tracking-wide py-2 px-6 transition-all duration-200 hover:translate-x-1 hover:translate-y-1 hover:shadow-none"

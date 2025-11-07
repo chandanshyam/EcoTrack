@@ -53,9 +53,6 @@ const iconMap: { [key in TransportMode]: React.FC<IconProps> } = {
   [TransportMode.TRAIN]: TrainIcon,
   [TransportMode.BUS]: BusIcon,
   [TransportMode.PLANE]: PlaneIcon,
-  [TransportMode.BIKE]: BikeIcon,
-  [TransportMode.WALK]: WalkIcon,
-  [TransportMode.METRO]: MetroIcon,
 };
 
 export const TransportIcon: React.FC<{ mode: TransportMode; className?: string }> = ({ mode, className }) => {

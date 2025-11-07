@@ -17,21 +17,15 @@ type TravelPreferencesProps = {
 }
 
 const TRANSPORT_MODE_LABELS = {
-  [TransportMode.WALK]: 'WALKING',
-  [TransportMode.BIKE]: 'CYCLING',
   [TransportMode.BUS]: 'BUS',
   [TransportMode.TRAIN]: 'TRAIN',
-  [TransportMode.METRO]: 'METRO',
   [TransportMode.CAR]: 'CAR',
   [TransportMode.PLANE]: 'PLANE',
 };
 
 const TRANSPORT_MODE_ICONS = {
-  [TransportMode.WALK]: '🚶',
-  [TransportMode.BIKE]: '🚴',
   [TransportMode.BUS]: '🚌',
   [TransportMode.TRAIN]: '🚂',
-  [TransportMode.METRO]: '🚇',
   [TransportMode.CAR]: '🚗',
   [TransportMode.PLANE]: '✈️',
 };
@@ -160,11 +154,8 @@ export const TravelPreferences: React.FC<TravelPreferencesProps> = ({
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              TransportMode.WALK,
-              TransportMode.BIKE,
               TransportMode.BUS,
               TransportMode.TRAIN,
-              TransportMode.METRO,
               TransportMode.CAR,
               TransportMode.PLANE
             ].map((mode) => {

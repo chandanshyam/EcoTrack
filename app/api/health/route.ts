@@ -1,45 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { env } from '@/lib/env'
+import { performanceMonitor } from '@/lib/utils/performance'
+import { databaseHealthChecker } from '@/lib/utils/database'
 
 export async function GET(request: NextRequest) {
+  const endTiming: (metadata?: Record<string, any>) => void = performanceMonitor.startTiming('api-health-check');
+  const startTime = Date.now();
+
+  const googleMapsKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const geminiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+
   const services = {
     googleMaps: {
-      configured: !!env.GOOGLE_MAPS_API_KEY,
-      status: env.GOOGLE_MAPS_API_KEY ? 'Ready' : 'Missing API Key',
+      configured: !!googleMapsKey,
+      status: googleMapsKey ? 'Ready' : 'Missing API Key',
       details: {
-        hasKey: !!env.GOOGLE_MAPS_API_KEY,
-        keyLength: env.GOOGLE_MAPS_API_KEY?.length || 0
+        hasKey: !!googleMapsKey,
+        keyLength: googleMapsKey?.length || 0
       }
     },
     gemini: {
-      configured: !!env.GEMINI_API_KEY,
-      status: env.GEMINI_API_KEY ? 'Ready' : 'Missing API Key',
+      configured: !!geminiKey,
+      status: geminiKey ? 'Ready' : 'Missing API Key',
       details: {
-        hasKey: !!env.GEMINI_API_KEY,
-        keyLength: env.GEMINI_API_KEY?.length || 0
+        hasKey: !!geminiKey,
+        keyLength: geminiKey?.length || 0
       }
     },
     firebase: {
-      configured: !!(env.FIREBASE_PROJECT_ID && env.FIREBASE_PRIVATE_KEY && env.FIREBASE_CLIENT_EMAIL),
-      status: (env.FIREBASE_PROJECT_ID && env.FIREBASE_PRIVATE_KEY && env.FIREBASE_CLIENT_EMAIL) 
+      configured: !!(process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL),
+      status: (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL)
         ? 'Ready' : 'Missing Configuration',
       details: {
-        hasProjectId: !!env.FIREBASE_PROJECT_ID,
-        hasPrivateKey: !!env.FIREBASE_PRIVATE_KEY,
-        hasClientEmail: !!env.FIREBASE_CLIENT_EMAIL,
-        projectId: env.FIREBASE_PROJECT_ID || 'Not set'
+        hasProjectId: !!process.env.FIREBASE_PROJECT_ID,
+        hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
+        hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+        projectId: process.env.FIREBASE_PROJECT_ID || 'Not set'
       }
     },
     auth: {
-      configured: !!(env.NEXTAUTH_SECRET && env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET),
-      status: env.NEXTAUTH_SECRET 
-        ? (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET ? 'Ready' : 'Missing OAuth Credentials')
+      configured: !!(process.env.NEXTAUTH_SECRET && process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+      status: process.env.NEXTAUTH_SECRET
+        ? (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? 'Ready' : 'Missing OAuth Credentials')
         : 'Missing NextAuth Secret',
       details: {
-        hasSecret: !!env.NEXTAUTH_SECRET,
-        hasClientId: !!env.GOOGLE_CLIENT_ID,
-        hasClientSecret: !!env.GOOGLE_CLIENT_SECRET,
-        nextAuthUrl: env.NEXTAUTH_URL
+        hasSecret: !!process.env.NEXTAUTH_SECRET,
+        hasClientId: !!process.env.GOOGLE_CLIENT_ID,
+        hasClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
+        nextAuthUrl: process.env.NEXTAUTH_URL || 'http://localhost:3000'
       }
     }
   }
@@ -47,6 +54,13 @@ export async function GET(request: NextRequest) {
   const allConfigured = Object.values(services).every(service => service.configured)
   const criticalServices = ['googleMaps', 'gemini', 'auth']
   const criticalConfigured = criticalServices.every(service => services[service as keyof typeof services].configured)
+
+  // Check database health
+  const dbHealthy = await databaseHealthChecker.checkHealth()
+  
+  // Get performance metrics
+  const performanceStats = performanceMonitor.getSummary()
+  const responseTime = Date.now() - startTime
 
   // Test basic functionality
   const functionalityTests = {
@@ -56,28 +70,50 @@ export async function GET(request: NextRequest) {
     canAccessProfile: services.auth.configured && services.firebase.configured
   }
 
+  const overallHealthy = allConfigured && dbHealthy
+  
+  endTiming({ 
+    healthy: overallHealthy, 
+    responseTime,
+    dbHealthy,
+    servicesConfigured: allConfigured 
+  })
+
   return NextResponse.json({
-    status: allConfigured ? 'All Services Ready' : criticalConfigured ? 'Core Services Ready' : 'Critical Services Missing',
+    status: overallHealthy ? 'Healthy' : criticalConfigured && dbHealthy ? 'Degraded' : 'Unhealthy',
     timestamp: new Date().toISOString(),
-    environment: env.NODE_ENV,
+    environment: process.env.NODE_ENV || 'development',
+    responseTime,
     server: {
       port: process.env.PORT || '3001',
       nodeVersion: process.version,
-      platform: process.platform
+      platform: process.platform,
+      uptime: process.uptime(),
+      memory: process.memoryUsage()
     },
     services,
+    database: {
+      healthy: dbHealthy,
+      status: dbHealthy ? 'Connected' : 'Connection Issues'
+    },
     functionality: functionalityTests,
+    performance: {
+      summary: performanceStats,
+      healthCheckTime: responseTime
+    },
     recommendations: [
       !services.auth.configured && '🔑 Set up Google OAuth: Go to Google Cloud Console → Credentials → Create OAuth 2.0 Client',
       !services.googleMaps.configured && '🗺️ Add Google Maps API key with proper permissions',
       !services.gemini.configured && '🤖 Add Gemini AI API key from Google AI Studio',
       !services.firebase.configured && '🔥 Configure Firebase credentials for data persistence',
-      services.auth.configured && services.googleMaps.configured && services.gemini.configured && '✅ Core services ready! Try planning a trip.'
+      !dbHealthy && '🔥 Database connection issues detected',
+      services.auth.configured && services.googleMaps.configured && services.gemini.configured && dbHealthy && '✅ All services ready! Try planning a trip.'
     ].filter(Boolean),
     quickTests: {
       healthEndpoint: '✅ Working (you\'re seeing this)',
       environmentVariables: allConfigured ? '✅ All set' : '⚠️ Some missing',
-      coreServices: criticalConfigured ? '✅ Ready' : '❌ Need setup'
+      coreServices: criticalConfigured ? '✅ Ready' : '❌ Need setup',
+      database: dbHealthy ? '✅ Connected' : '❌ Issues detected'
     },
     nextSteps: !criticalConfigured ? [
       '1. Set up Google OAuth credentials',
@@ -91,5 +127,30 @@ export async function GET(request: NextRequest) {
       '• Sign in and save preferences',
       '• View your dashboard'
     ]
+  }, {
+    status: overallHealthy ? 200 : 503,
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
   })
+}
+export async function HEAD() {
+  // Simple health check for monitoring systems
+  try {
+    const dbHealthy = await databaseHealthChecker.checkHealth()
+    const googleMapsKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    const geminiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    const envHealthy = !!(googleMapsKey && geminiKey)
+
+    return new NextResponse(null, {
+      status: dbHealthy && envHealthy ? 200 : 503,
+      headers: {
+        'Cache-Control': 'no-cache'
+      }
+    })
+  } catch {
+    return new NextResponse(null, { status: 503 })
+  }
 }

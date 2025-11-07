@@ -35,21 +35,15 @@ type UserPreferencesManagerProps = {
 }
 
 const TRANSPORT_MODE_LABELS = {
-  [TransportMode.WALK]: 'WALKING',
-  [TransportMode.BIKE]: 'CYCLING',
   [TransportMode.BUS]: 'BUS',
   [TransportMode.TRAIN]: 'TRAIN',
-  [TransportMode.METRO]: 'METRO',
   [TransportMode.CAR]: 'CAR',
   [TransportMode.PLANE]: 'PLANE',
 };
 
 const TRANSPORT_MODE_ICONS = {
-  [TransportMode.WALK]: '🚶',
-  [TransportMode.BIKE]: '🚴',
   [TransportMode.BUS]: '🚌',
   [TransportMode.TRAIN]: '🚂',
-  [TransportMode.METRO]: '🚇',
   [TransportMode.CAR]: '🚗',
   [TransportMode.PLANE]: '✈️',
 };

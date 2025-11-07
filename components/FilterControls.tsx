@@ -30,21 +30,15 @@ const SORT_OPTIONS = [
 ];
 
 const TRANSPORT_MODE_LABELS = {
-  [TransportMode.WALK]: 'WALK',
-  [TransportMode.BIKE]: 'BIKE',
   [TransportMode.BUS]: 'BUS',
   [TransportMode.TRAIN]: 'TRAIN',
-  [TransportMode.METRO]: 'METRO',
   [TransportMode.CAR]: 'CAR',
   [TransportMode.PLANE]: 'PLANE',
 };
 
 const TRANSPORT_MODE_ICONS = {
-  [TransportMode.WALK]: '🚶',
-  [TransportMode.BIKE]: '🚴',
   [TransportMode.BUS]: '🚌',
   [TransportMode.TRAIN]: '🚂',
-  [TransportMode.METRO]: '🚇',
   [TransportMode.CAR]: '🚗',
   [TransportMode.PLANE]: '✈️',
 };

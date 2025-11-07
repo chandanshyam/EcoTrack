@@ -75,9 +75,9 @@ export default function DashboardPage() {
             <div className="card-cyan p-4 mb-6">
               <p className="text-brutal">CUSTOMIZE YOUR TRAVEL PREFERENCES AND SUSTAINABILITY GOALS</p>
             </div>
-            <Link href="/profile">
+            <Link href="/preferences">
               <button className="btn-secondary w-full text-lg py-4">
-                EDIT PROFILE
+                EDIT PREFERENCES
               </button>
             </Link>
           </div>
@@ -86,7 +86,7 @@ export default function DashboardPage() {
         {/* Quick Actions */}
         <div className="card-brutal">
           <h2 className="heading-brutal text-3xl mb-6">QUICK ACTIONS</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Link href="/" className="block">
               <div className="card-green p-6 text-center hover:translate-x-1 hover:translate-y-1 transition-transform">
                 <svg className="w-12 h-12 mx-auto text-neo-black mb-4" fill="currentColor" viewBox="0 0 24 24">
@@ -96,7 +96,7 @@ export default function DashboardPage() {
                 <p className="text-brutal text-sm">Find sustainable routes</p>
               </div>
             </Link>
-            
+
             <Link href="/history" className="block">
               <div className="card-cyan p-6 text-center hover:translate-x-1 hover:translate-y-1 transition-transform">
                 <svg className="w-12 h-12 mx-auto text-neo-black mb-4" fill="currentColor" viewBox="0 0 24 24">
@@ -104,16 +104,6 @@ export default function DashboardPage() {
                 </svg>
                 <h3 className="heading-brutal text-lg mb-2">VIEW HISTORY</h3>
                 <p className="text-brutal text-sm">Review past trips</p>
-              </div>
-            </Link>
-            
-            <Link href="/profile" className="block">
-              <div className="card-yellow p-6 text-center hover:translate-x-1 hover:translate-y-1 transition-transform">
-                <svg className="w-12 h-12 mx-auto text-neo-black mb-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                </svg>
-                <h3 className="heading-brutal text-lg mb-2">PROFILE</h3>
-                <p className="text-brutal text-sm">Manage preferences</p>
               </div>
             </Link>
           </div>

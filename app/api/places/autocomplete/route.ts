@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { env } from '@/lib/env';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +16,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!env.GOOGLE_MAPS_API_KEY) {
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
       return NextResponse.json(
         { error: 'Google Maps API key not configured' },
         { status: 500 }
@@ -26,7 +28,7 @@ export async function GET(request: NextRequest) {
     let url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?` +
       `input=${encodeURIComponent(input)}&` +
       `types=geocode&` +
-      `key=${env.GOOGLE_MAPS_API_KEY}`;
+      `key=${apiKey}`;
 
     if (lat && lng) {
       url += `&location=${lat},${lng}&radius=50000`;

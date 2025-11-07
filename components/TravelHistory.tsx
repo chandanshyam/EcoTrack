@@ -59,6 +59,26 @@ export default function TravelHistory({ className = '' }: TravelHistoryProps) {
     }
   }
 
+  // Helper function to safely format dates
+  const formatTripDate = (date: Date | string | null | undefined): string => {
+    if (!date) return 'Date not available'
+
+    try {
+      const dateObj = date instanceof Date ? date : new Date(date)
+      if (isNaN(dateObj.getTime())) return 'Invalid date'
+
+      return dateObj.toLocaleDateString('en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      })
+    } catch (error) {
+      console.error('Error formatting date:', error)
+      return 'Date error'
+    }
+  }
+
   const applyFilters = () => {
     let filtered = [...trips]
 
@@ -66,7 +86,7 @@ export default function TravelHistory({ className = '' }: TravelHistoryProps) {
     if (filters.dateRange !== 'all') {
       const now = new Date()
       const cutoffDate = new Date()
-      
+
       switch (filters.dateRange) {
         case 'week':
           cutoffDate.setDate(now.getDate() - 7)
@@ -79,7 +99,11 @@ export default function TravelHistory({ className = '' }: TravelHistoryProps) {
           break
       }
       
-      filtered = filtered.filter(trip => trip.completedAt >= cutoffDate)
+      filtered = filtered.filter(trip => {
+        if (!trip.completedAt) return false
+        const tripDate = trip.completedAt instanceof Date ? trip.completedAt : new Date(trip.completedAt)
+        return tripDate >= cutoffDate
+      })
     }
 
     // Apply transport mode filter
@@ -94,9 +118,13 @@ export default function TravelHistory({ className = '' }: TravelHistoryProps) {
       let comparison = 0
       
       switch (filters.sortBy) {
-        case 'date':
-          comparison = a.completedAt.getTime() - b.completedAt.getTime()
+        case 'date': {
+          // Safely handle null/undefined dates
+          const dateA = a.completedAt ? (a.completedAt instanceof Date ? a.completedAt : new Date(a.completedAt)) : new Date(0)
+          const dateB = b.completedAt ? (b.completedAt instanceof Date ? b.completedAt : new Date(b.completedAt)) : new Date(0)
+          comparison = dateA.getTime() - dateB.getTime()
           break
+        }
         case 'carbon':
           comparison = a.carbonFootprint - b.carbonFootprint
           break
@@ -126,6 +154,10 @@ export default function TravelHistory({ className = '' }: TravelHistoryProps) {
     return `${mins}m`
   }
 
+  const kmToMiles = (km: number): number => {
+    return Math.round(km * 0.621371)
+  }
+
   const getSustainabilityScoreColor = (score: number): string => {
     if (score >= 80) return 'card-green'
     if (score >= 60) return 'card-yellow'
@@ -138,10 +170,7 @@ export default function TravelHistory({ className = '' }: TravelHistoryProps) {
       [TransportMode.CAR]: '🚗',
       [TransportMode.TRAIN]: '🚆',
       [TransportMode.BUS]: '🚌',
-      [TransportMode.PLANE]: '✈️',
-      [TransportMode.BIKE]: '🚴',
-      [TransportMode.WALK]: '🚶',
-      [TransportMode.METRO]: '🚇'
+      [TransportMode.PLANE]: '✈️'
     }
     return icons[mode] || '🚗'
   }
@@ -238,9 +267,6 @@ export default function TravelHistory({ className = '' }: TravelHistoryProps) {
               <option value={TransportMode.TRAIN}>TRAIN</option>
               <option value={TransportMode.BUS}>BUS</option>
               <option value={TransportMode.PLANE}>PLANE</option>
-              <option value={TransportMode.BIKE}>BIKE</option>
-              <option value={TransportMode.WALK}>WALK</option>
-              <option value={TransportMode.METRO}>METRO</option>
             </select>
           </div>
 
@@ -304,12 +330,7 @@ export default function TravelHistory({ className = '' }: TravelHistoryProps) {
                         {trip.route.origin.address} → {trip.route.destination.address}
                       </h3>
                       <p className="text-brutal text-sm text-gray-600">
-                        {trip.completedAt.toLocaleDateString('en-US', { 
-                          weekday: 'short', 
-                          year: 'numeric', 
-                          month: 'short', 
-                          day: 'numeric' 
-                        })}
+                        {formatTripDate(trip.completedAt)}
                       </p>
                     </div>
                     <div className={`${getSustainabilityScoreColor(trip.route.sustainabilityScore)} px-3 py-1 text-center`}>
@@ -336,7 +357,7 @@ export default function TravelHistory({ className = '' }: TravelHistoryProps) {
                     </div>
                     <div className="text-center">
                       <p className="text-brutal text-xs mb-1">DISTANCE</p>
-                      <p className="text-brutal text-sm">{Math.round(trip.route.totalDistance)}km</p>
+                      <p className="text-brutal text-sm">{kmToMiles(trip.route.totalDistance)} mi</p>
                     </div>
                     <div className="text-center">
                       <p className="text-brutal text-xs mb-1">CARBON</p>
@@ -389,7 +410,7 @@ export default function TravelHistory({ className = '' }: TravelHistoryProps) {
                             <div className="grid grid-cols-3 gap-2 text-xs">
                               <div>
                                 <p className="text-brutal">DISTANCE</p>
-                                <p>{Math.round(segment.distance)}km</p>
+                                <p>{kmToMiles(segment.distance)} mi</p>
                               </div>
                               <div>
                                 <p className="text-brutal">CARBON</p>

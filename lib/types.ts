@@ -3,9 +3,6 @@ export enum TransportMode {
   TRAIN = 'train',
   BUS = 'bus',
   PLANE = 'plane',
-  BIKE = 'bike',
-  WALK = 'walk',
-  METRO = 'metro',
 }
 
 export type TransportSegment = {
@@ -41,7 +38,6 @@ export type Location = {
 
 export type SustainabilityAnalysis = {
   summary: string;
-  tips: string[];
   comparison: {
     conventionalMethod: string;
     conventionalFootprint: number;

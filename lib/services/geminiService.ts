@@ -1,35 +1,28 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { RouteOption, SustainabilityAnalysis, RouteAnalysis, TransportMode, GeolocationCoords } from '@/lib/types';
 import { TravelPreferencesData } from '@/components/TravelPreferences';
-import { env } from '@/lib/env';
 import { CarbonCalculationService } from './carbonCalculationService';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
 
-const genAI = env.GEMINI_API_KEY ? new GoogleGenerativeAI(env.GEMINI_API_KEY) : null;
+// load env vars
+if (typeof window === 'undefined') {
+  dotenv.config({ path: path.resolve(process.cwd(), '.env.local'), override: true });
+}
 
-const defaultAnalysis: SustainabilityAnalysis = {
-  summary: "Analysis could not be generated due to an API error.",
-  tips: ["Consider off-peak travel to reduce congestion.", "Combine trips to be more efficient."],
-  comparison: {
-    conventionalMethod: "a standard gasoline car",
-    conventionalFootprint: 10.0,
-    savings: "By choosing a greener option, you could save a significant amount of CO2.",
-  }
-};
+const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
 
-/**
- * Analyze sustainability of route options using Gemini AI
- */
+// analyze sustainability with Gemini AI
 export const analyzeSustainability = async (
   routes: RouteOption[],
   origin: string,
   destination: string
 ): Promise<SustainabilityAnalysis> => {
-  if (!genAI || !env.GEMINI_API_KEY) {
-    console.warn("GEMINI_API_KEY is not set. Using default analysis.");
-    return defaultAnalysis;
+  if (!genAI || !process.env.GEMINI_API_KEY) {
+    throw new Error("Gemini API key not configured");
   }
 
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const routeData = routes.map(route => ({
     name: route.name,
@@ -52,14 +45,11 @@ Provide a sustainability analysis with:
 
 1. **Summary**: A brief, encouraging explanation of why the most sustainable route is the best environmental choice (2-3 sentences).
 
-2. **Tips**: Exactly 3 actionable sustainability tips specific to this journey and transport modes used.
-
-3. **Comparison**: Compare the most sustainable route against driving a standard gasoline car for the same distance. Calculate the conventional car's CO2 emissions (use 0.21 kg CO2e per km) and describe the environmental savings.
+2. **Comparison**: Compare the most sustainable route against driving a standard gasoline car for the same distance. Calculate the conventional car's CO2 emissions (use 0.21 kg CO2e per km) and describe the environmental savings.
 
 Respond with a JSON object in this exact format:
 {
   "summary": "string",
-  "tips": ["tip1", "tip2", "tip3"],
   "comparison": {
     "conventionalMethod": "standard gasoline car",
     "conventionalFootprint": number,
@@ -73,7 +63,7 @@ Respond with a JSON object in this exact format:
     const response = result.response;
     let text = response.text();
 
-    // Clean up the response to extract JSON
+    // strip json markers if present
     if (text.includes('```json')) {
       text = text.substring(text.indexOf('```json') + 7);
       text = text.substring(0, text.indexOf('```'));
@@ -86,14 +76,20 @@ Respond with a JSON object in this exact format:
     return analysis;
 
   } catch (error) {
-    console.error("Error analyzing sustainability with Gemini:", error);
-    return defaultAnalysis;
+    console.error("Gemini analysis failed:", error);
+
+    if (error instanceof Error) {
+      const msg = error.message.toLowerCase();
+      if (msg.includes('permission') || msg.includes('403') || msg.includes('quota')) {
+        console.error("API access issue - check your Gemini API key and billing");
+      }
+    }
+
+    throw new Error(`Gemini API Error: ${error instanceof Error ? error.message : 'Unknown'}`);
   }
 };
 
-/**
- * Generate detailed route analysis and recommendations
- */
+// generate route recommendations
 export const generateRouteRecommendations = async (
   routes: RouteOption[],
   userPreferences?: {
@@ -102,18 +98,11 @@ export const generateRouteRecommendations = async (
     budgetLimit?: number;
   }
 ): Promise<RouteAnalysis[]> => {
-  if (!genAI || !env.GEMINI_API_KEY) {
-    console.warn("GEMINI_API_KEY is not set. Using default recommendations.");
-    return routes.map(route => ({
-      routeId: route.id,
-      sustainabilityScore: route.sustainabilityScore,
-      carbonFootprint: route.totalCarbonFootprint,
-      insights: ["Analysis unavailable - API key not configured"],
-      recommendations: ["Consider sustainable transport options"],
-    }));
+  if (!genAI || !process.env.GEMINI_API_KEY) {
+    throw new Error("Gemini API key not configured");
   }
 
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
   const routeData = routes.map(route => ({
     id: route.id,
@@ -166,7 +155,7 @@ Respond with a JSON array where each object has this format:
     const response = result.response;
     let text = response.text();
 
-    // Clean up the response to extract JSON
+    // clean up json response
     if (text.includes('```json')) {
       text = text.substring(text.indexOf('```json') + 7);
       text = text.substring(0, text.indexOf('```'));
@@ -179,20 +168,20 @@ Respond with a JSON array where each object has this format:
     return analyses;
 
   } catch (error) {
-    console.error("Error generating route recommendations with Gemini:", error);
-    return routes.map(route => ({
-      routeId: route.id,
-      sustainabilityScore: route.sustainabilityScore,
-      carbonFootprint: route.totalCarbonFootprint,
-      insights: ["Analysis temporarily unavailable"],
-      recommendations: ["Consider the most sustainable transport options available"],
-    }));
+    console.error("Route recommendations failed:", error);
+
+    if (error instanceof Error) {
+      const msg = error.message.toLowerCase();
+      if (msg.includes('permission') || msg.includes('403') || msg.includes('quota')) {
+        console.error("API issue detected");
+      }
+    }
+
+    throw new Error(`Gemini API Error: ${error instanceof Error ? error.message : 'Unknown'}`);
   }
 };
 
-/**
- * Generate personalized sustainability insights based on travel history
- */
+// generate personalized insights
 export const generatePersonalizedInsights = async (
   travelHistory: RouteOption[],
   timeframe: 'week' | 'month' | 'year' = 'month'
@@ -201,22 +190,21 @@ export const generatePersonalizedInsights = async (
   recommendations: string[];
   achievements: string[];
 }> => {
-  if (!genAI || !env.GEMINI_API_KEY) {
-    console.warn("GEMINI_API_KEY is not set. Using default insights.");
+  if (!genAI || !process.env.GEMINI_API_KEY) {
+    console.warn("API key not set");
     return {
-      insights: ["Travel analysis unavailable - API key not configured"],
-      recommendations: ["Configure Gemini API to get personalized insights"],
+      insights: ["Travel analysis unavailable"],
+      recommendations: ["Configure API key for insights"],
       achievements: [],
     };
   }
 
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-  // Calculate summary statistics
   const totalTrips = travelHistory.length;
-  const totalCarbonFootprint = travelHistory.reduce((sum, trip) => sum + trip.totalCarbonFootprint, 0);
-  const averageSustainabilityScore = travelHistory.reduce((sum, trip) => sum + trip.sustainabilityScore, 0) / totalTrips;
-  const transportModeUsage = travelHistory.reduce((acc, trip) => {
+  const totalCarbon = travelHistory.reduce((sum, trip) => sum + trip.totalCarbonFootprint, 0);
+  const avgScore = travelHistory.reduce((sum, trip) => sum + trip.sustainabilityScore, 0) / totalTrips;
+  const modeUsage = travelHistory.reduce((acc, trip) => {
     trip.transportModes.forEach(segment => {
       acc[segment.mode] = (acc[segment.mode] || 0) + 1;
     });
@@ -228,9 +216,9 @@ You are EcoTrack's personal sustainability coach. Analyze this user's travel pat
 
 Travel Statistics:
 - Total trips: ${totalTrips}
-- Total carbon footprint: ${totalCarbonFootprint.toFixed(2)} kg CO2e
-- Average sustainability score: ${averageSustainabilityScore.toFixed(1)}/100
-- Transport mode usage: ${JSON.stringify(transportModeUsage)}
+- Total carbon footprint: ${totalCarbon.toFixed(2)} kg CO2e
+- Average sustainability score: ${avgScore.toFixed(1)}/100
+- Transport mode usage: ${JSON.stringify(modeUsage)}
 
 Recent trips:
 ${JSON.stringify(travelHistory.slice(-5).map(trip => ({
@@ -256,10 +244,9 @@ Respond with a JSON object:
 
   try {
     const result = await model.generateContent(prompt);
-    const response = result.response;
-    let text = response.text();
+    let text = result.response.text();
 
-    // Clean up the response to extract JSON
+    // extract json
     if (text.includes('```json')) {
       text = text.substring(text.indexOf('```json') + 7);
       text = text.substring(0, text.indexOf('```'));
@@ -268,23 +255,19 @@ Respond with a JSON object:
       text = text.substring(0, text.indexOf('```'));
     }
 
-    const personalizedData = JSON.parse(text.trim());
-    return personalizedData;
+    return JSON.parse(text.trim());
 
   } catch (error) {
-    console.error("Error generating personalized insights with Gemini:", error);
+    console.error("Insights generation failed:", error);
     return {
-      insights: ["Unable to analyze travel patterns at this time"],
-      recommendations: ["Continue choosing sustainable transport options when possible"],
+      insights: ["Unable to analyze patterns"],
+      recommendations: ["Keep choosing sustainable options"],
       achievements: [],
     };
   }
 };
 
-/**
- * Plan a trip with AI-powered sustainability analysis
- * This is the main function that combines route planning with carbon calculations
- */
+// main trip planning function
 export const planTripWithAI = async (
   origin: string,
   destination: string,
@@ -296,57 +279,57 @@ export const planTripWithAI = async (
   analysis: SustainabilityAnalysis;
 }> => {
   try {
-    // Call our server-side API to get routes (avoids CORS issues)
-    const response = await fetch('/api/routes/plan', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ 
-        origin, 
-        destination, 
-        travelDate,
-        preferences 
-      }),
-    });
+    const { googleMapsService } = await import('./googleMapsService');
 
-    if (!response.ok) {
-      throw new Error(`Route planning failed: ${response.statusText}`);
+    const transportModes = preferences?.preferredTransportModes && preferences.preferredTransportModes.length > 0
+      ? preferences.preferredTransportModes
+      : [TransportMode.CAR, TransportMode.TRAIN, TransportMode.BUS, TransportMode.PLANE];
+
+    let originAddr = origin;
+    if (origin === 'My Current Location' && userLocation) {
+      originAddr = `${userLocation.latitude},${userLocation.longitude}`;
     }
 
-    const { routes: googleRoutes } = await response.json();
-    
+    const googleRoutes = await googleMapsService.calculateRoutes(
+      originAddr,
+      destination,
+      transportModes,
+      travelDate
+    );
+
     if (!googleRoutes || googleRoutes.length === 0) {
       throw new Error('No routes found');
     }
 
-    // Enhance routes with advanced carbon calculations and sustainability scoring
-    const enhancedRoutes = CarbonCalculationService.processRouteOptions(googleRoutes);
+    const enhanced = CarbonCalculationService.processRouteOptions(googleRoutes);
 
-    // Routes are already sorted by the API based on user preferences
-    // Only re-sort if user prioritizes sustainability (default behavior)
-    let finalRoutes = enhancedRoutes;
+    // sort by preference
+    let finalRoutes = enhanced;
     if (preferences?.prioritizeSustainability !== false) {
-      // Re-sort by sustainability score for consistency
-      finalRoutes = enhancedRoutes.sort((a, b) => b.sustainabilityScore - a.sustainabilityScore);
+      finalRoutes = enhanced.sort((a, b) => b.sustainabilityScore - a.sustainabilityScore);
+    } else {
+      finalRoutes = enhanced.sort((a, b) => {
+        const diff = a.totalCost - b.totalCost;
+        if (Math.abs(diff) > 1) return diff;
+        return a.totalDuration - b.totalDuration;
+      });
     }
-    // Otherwise keep the API's sorting (by cost/time if prioritizeSustainability is false)
 
-    // Generate AI-powered sustainability analysis with preference context
+    // apply filters
+    if (preferences?.maxTravelTime) {
+      finalRoutes = finalRoutes.filter(r => r.totalDuration <= preferences.maxTravelTime!);
+    }
+
+    if (preferences?.budgetLimit) {
+      finalRoutes = finalRoutes.filter(r => r.totalCost <= preferences.budgetLimit!);
+    }
+
     const analysis = await analyzeSustainability(finalRoutes, origin, destination);
 
-    return {
-      routes: finalRoutes,
-      analysis
-    };
+    return { routes: finalRoutes, analysis };
 
   } catch (error) {
-    console.error('Error planning trip with AI:', error);
-    
-    // Return fallback data
-    return {
-      routes: [],
-      analysis: defaultAnalysis
-    };
+    console.error('Trip planning failed:', error);
+    throw error;
   }
 };

@@ -3,7 +3,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 import { RouteOption, TransportMode, TransportSegment } from '@/lib/types';
-import { env } from '@/lib/env';
 
 // Declare global google maps types
 declare global {
@@ -21,7 +20,7 @@ interface InteractiveMapProps {
 }
 
 interface MapMarker {
-  marker: google.maps.Marker;
+  marker: google.maps.marker.AdvancedMarkerElement;
   infoWindow: google.maps.InfoWindow;
 }
 
@@ -35,9 +34,6 @@ const TRANSPORT_MODE_COLORS: Record<TransportMode, string> = {
   [TransportMode.TRAIN]: '#a5b5a5', // dull green
   [TransportMode.BUS]: '#d4b896', // dull amber
   [TransportMode.PLANE]: '#a595b5', // dull violet
-  [TransportMode.BIKE]: '#9bb5b5', // dull cyan
-  [TransportMode.WALK]: '#a5b5a5', // dull lime
-  [TransportMode.METRO]: '#8a9bb5', // dull blue
 };
 
 const TRANSPORT_MODE_ICONS: Record<TransportMode, string> = {
@@ -45,9 +41,6 @@ const TRANSPORT_MODE_ICONS: Record<TransportMode, string> = {
   [TransportMode.TRAIN]: '🚆',
   [TransportMode.BUS]: '🚌',
   [TransportMode.PLANE]: '✈️',
-  [TransportMode.BIKE]: '🚴',
-  [TransportMode.WALK]: '🚶',
-  [TransportMode.METRO]: '🚇',
 };
 
 // Utility function to decode Google Maps encoded polyline
@@ -120,6 +113,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       const map = new google.maps.Map(mapRef.current, {
         zoom: 10,
         center: defaultCenter,
+        mapId: 'c038e9cde4ca08dbe20f77aa', // Google Cloud Map ID for Advanced Markers
         mapTypeId: google.maps.MapTypeId.ROADMAP,
         styles: [
           {
@@ -160,7 +154,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
   // Initialize Google Maps
   const initializeMap = useCallback(async () => {
-    if (!mapRef.current || !env.GOOGLE_MAPS_API_KEY) {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
+    if (!mapRef.current || !apiKey) {
       setError('Google Maps API key is required');
       setIsLoading(false);
       return;
@@ -175,13 +170,14 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
       // Set Google Maps API options
       setOptions({
-        key: env.GOOGLE_MAPS_API_KEY,
+        key: apiKey,
         v: 'weekly',
-        libraries: ['geometry', 'places']
+        libraries: ['geometry', 'places', 'marker']
       });
 
       // Load the Google Maps API
       await importLibrary('maps');
+      await importLibrary('marker');
 
       createMap();
     } catch (err) {
@@ -195,7 +191,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const clearMapElements = useCallback(() => {
     // Clear markers
     markersRef.current.forEach(({ marker, infoWindow }) => {
-      marker.setMap(null);
+      marker.map = null; // AdvancedMarkerElement uses property assignment instead of setMap()
       infoWindow.close();
     });
     markersRef.current = [];
@@ -286,35 +282,45 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       const opacity = selectedRouteId && !isSelected ? 0.3 : 1.0;
       const zIndex = isSelected ? 1000 : 100 + routeIndex;
 
-      // Create origin marker
-      const originMarker = new google.maps.Marker({
+      // Create origin marker with AdvancedMarkerElement
+      const originPin = new google.maps.marker.PinElement({
+        background: '#a5b5a5',
+        borderColor: '#2a2a2a',
+        glyphColor: '#2a2a2a',
+        scale: 1.0,
+      });
+
+      // Apply opacity to marker if not selected
+      if (opacity < 1.0 && originPin.element) {
+        (originPin.element as HTMLElement).style.opacity = opacity.toString();
+      }
+
+      const originMarker = new google.maps.marker.AdvancedMarkerElement({
         position: route.origin.coordinates,
         map: mapInstanceRef.current,
         title: `${route.name} - Origin`,
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 8,
-          fillColor: '#a5b5a5',
-          fillOpacity: opacity,
-          strokeColor: '#2a2a2a',
-          strokeWeight: 2,
-        },
+        content: originPin.element,
         zIndex: zIndex + 10,
       });
 
-      // Create destination marker
-      const destinationMarker = new google.maps.Marker({
+      // Create destination marker with AdvancedMarkerElement
+      const destinationPin = new google.maps.marker.PinElement({
+        background: '#b59595',
+        borderColor: '#2a2a2a',
+        glyphColor: '#2a2a2a',
+        scale: 1.0,
+      });
+
+      // Apply opacity to marker if not selected
+      if (opacity < 1.0 && destinationPin.element) {
+        (destinationPin.element as HTMLElement).style.opacity = opacity.toString();
+      }
+
+      const destinationMarker = new google.maps.marker.AdvancedMarkerElement({
         position: route.destination.coordinates,
         map: mapInstanceRef.current,
         title: `${route.name} - Destination`,
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 8,
-          fillColor: '#b59595',
-          fillOpacity: opacity,
-          strokeColor: '#2a2a2a',
-          strokeWeight: 2,
-        },
+        content: destinationPin.element,
         zIndex: zIndex + 10,
       });
 
@@ -513,3 +519,5 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     </div>
   );
 };
+
+export default InteractiveMap;

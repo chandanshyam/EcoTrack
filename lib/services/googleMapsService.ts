@@ -1,7 +1,5 @@
-import { env } from '@/lib/env';
 import { Location, RouteOption, TransportMode, TransportSegment } from '@/lib/types';
 
-// Google Maps API response types
 interface GoogleMapsDirectionsResponse {
   routes: GoogleMapsRoute[];
   status: string;
@@ -19,6 +17,10 @@ interface GoogleMapsRoute {
     text: string;
     value: number;
   };
+  duration_in_traffic?: {
+    text: string;
+    value: number;
+  };
   distance: {
     text: string;
     value: number;
@@ -28,11 +30,11 @@ interface GoogleMapsRoute {
 interface GoogleMapsLeg {
   distance: {
     text: string;
-    value: number; // meters
+    value: number;
   };
   duration: {
     text: string;
-    value: number; // seconds
+    value: number;
   };
   start_address: string;
   end_address: string;
@@ -58,6 +60,21 @@ interface GoogleMapsStep {
   };
   travel_mode: string;
   instructions: string;
+  transit_details?: {
+    arrival_stop: {
+      name: string;
+    };
+    departure_stop: {
+      name: string;
+    };
+    line: {
+      name: string;
+      vehicle: {
+        type: string;
+      };
+    };
+    num_stops: number;
+  };
 }
 
 interface GoogleMapsGeocodingResponse {
@@ -77,18 +94,15 @@ interface GoogleMapsGeocodingResult {
   place_id: string;
 }
 
-// Import carbon calculation service for consistent calculations
 import { CarbonCalculationService } from './carbonCalculationService';
+import { routeCache, locationCache, generateRouteKey, withCache } from '@/lib/utils/cache';
 
-// Cost estimates (USD per km)
+// cost estimates per km
 const COST_FACTORS = {
-  [TransportMode.CAR]: 0.56, // Including fuel, maintenance, depreciation
-  [TransportMode.TRAIN]: 0.15, // Average train fare
-  [TransportMode.BUS]: 0.10, // Average bus fare
-  [TransportMode.PLANE]: 0.25, // Average domestic flight
-  [TransportMode.BIKE]: 0.02, // Maintenance and depreciation
-  [TransportMode.WALK]: 0, // Free
-  [TransportMode.METRO]: 0.12, // Average metro fare
+  [TransportMode.CAR]: 0.56,
+  [TransportMode.TRAIN]: 0.15,
+  [TransportMode.BUS]: 0.10,
+  [TransportMode.PLANE]: 0.25,
 };
 
 class GoogleMapsService {
@@ -96,115 +110,176 @@ class GoogleMapsService {
   private readonly baseUrl = 'https://maps.googleapis.com/maps/api';
 
   constructor() {
-    this.apiKey = env.GOOGLE_MAPS_API_KEY;
+    // Only use server-side env var - this service should never be instantiated in the browser
+    this.apiKey = process.env.GOOGLE_MAPS_API_KEY || '';
   }
 
   private checkApiKey(): void {
     if (!this.apiKey) {
-      throw new Error('Google Maps API key is required. Please set GOOGLE_MAPS_API_KEY environment variable.');
+      throw new Error('Google Maps API key required. This service must only be used server-side.');
     }
   }
 
-  /**
-   * Geocode an address to get coordinates and formatted address
-   */
   async geocodeAddress(address: string): Promise<Location> {
+    const cacheKey = `geocode:${address.toLowerCase().trim()}`;
+    const cached = locationCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     this.checkApiKey();
     const url = `${this.baseUrl}/geocode/json?address=${encodeURIComponent(address)}&key=${this.apiKey}`;
-    
+
     try {
       const response = await fetch(url);
       const data: GoogleMapsGeocodingResponse = await response.json();
-      
+
       if (data.status !== 'OK' || !data.results.length) {
         throw new Error(`Geocoding failed: ${data.error_message || data.status}`);
       }
-      
+
       const result = data.results[0];
-      return {
+      const location = {
         address: result.formatted_address,
         coordinates: {
           lat: result.geometry.location.lat,
           lng: result.geometry.location.lng,
         },
       };
+
+      locationCache.set(cacheKey, location);
+      return location;
     } catch (error) {
       console.error('Geocoding error:', error);
       throw new Error(`Failed to geocode address: ${address}`);
     }
   }
 
-  /**
-   * Calculate routes between two locations with multiple transport modes
-   */
   async calculateRoutes(
     origin: string,
     destination: string,
-    transportModes: TransportMode[] = [TransportMode.CAR, TransportMode.TRAIN, TransportMode.BUS]
+    transportModes: TransportMode[] = [TransportMode.CAR, TransportMode.TRAIN, TransportMode.BUS],
+    travelDate?: string
   ): Promise<RouteOption[]> {
+    const cacheKey = generateRouteKey(origin, destination, transportModes.map(m => m.toString()));
+    const cached = routeCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     this.checkApiKey();
     const routes: RouteOption[] = [];
-    
-    // Geocode origin and destination
-    const [originLocation, destinationLocation] = await Promise.all([
+
+    const [originLoc, destLoc] = await Promise.all([
       this.geocodeAddress(origin),
       this.geocodeAddress(destination),
     ]);
 
-    // Calculate routes for each transport mode
     for (const mode of transportModes) {
       try {
         const route = await this.calculateSingleRoute(
-          originLocation,
-          destinationLocation,
-          mode
+          originLoc,
+          destLoc,
+          mode,
+          travelDate
         );
         if (route) {
           routes.push(route);
         }
       } catch (error) {
         console.warn(`Failed to calculate route for ${mode}:`, error);
-        // Continue with other transport modes
       }
     }
 
-    // Sort routes by sustainability score (highest first)
-    return routes.sort((a, b) => b.sustainabilityScore - a.sustainabilityScore);
+    const sorted = routes.sort((a, b) => b.sustainabilityScore - a.sustainabilityScore);
+    routeCache.set(cacheKey, sorted);
+    return sorted;
   }
 
-  /**
-   * Calculate a single route for a specific transport mode
-   */
+  // get actual transit time (in-vehicle only)
+  private calculateTransitOnlyDuration(route: GoogleMapsRoute): number {
+    let transitTime = 0;
+
+    for (const leg of route.legs) {
+      for (const step of leg.steps) {
+        if (step.travel_mode === 'TRANSIT' && step.transit_details) {
+          transitTime += step.duration.value;
+        }
+      }
+    }
+
+    return transitTime / 60; // convert to minutes
+  }
+
   private async calculateSingleRoute(
     origin: Location,
     destination: Location,
-    mode: TransportMode
+    mode: TransportMode,
+    travelDate?: string
   ): Promise<RouteOption | null> {
     const travelMode = this.mapTransportModeToGoogleMaps(mode);
-    const url = `${this.baseUrl}/directions/json?` +
+
+    let url = `${this.baseUrl}/directions/json?` +
       `origin=${origin.coordinates.lat},${origin.coordinates.lng}&` +
       `destination=${destination.coordinates.lat},${destination.coordinates.lng}&` +
-      `mode=${travelMode}&` +
-      `key=${this.apiKey}`;
+      `mode=${travelMode}&`;
+
+    if (travelMode === 'transit') {
+      const departureTime = travelDate
+        ? Math.floor(new Date(travelDate).getTime() / 1000)
+        : Math.floor(Date.now() / 1000);
+
+      url += `departure_time=${departureTime}&`;
+
+      const transitMode = this.getTransitModePreference(mode);
+      if (transitMode) {
+        url += `transit_mode=${transitMode}&`;
+      }
+
+      url += `transit_routing_preference=fewer_transfers&`;
+      url += `alternatives=true&`;
+    }
+
+    url += `key=${this.apiKey}`;
 
     try {
       const response = await fetch(url);
       const data: GoogleMapsDirectionsResponse = await response.json();
-      
+
       if (data.status !== 'OK' || !data.routes.length) {
         console.warn(`No route found for ${mode}: ${data.error_message || data.status}`);
         return null;
       }
-      
-      const googleRoute = data.routes[0];
-      const distanceKm = googleRoute.distance.value / 1000; // Convert meters to km
-      const durationMinutes = googleRoute.duration.value / 60; // Convert seconds to minutes
-      
-      // Calculate carbon footprint using our enhanced service
-      const carbonEmission = distanceKm * CarbonCalculationService.getEmissionFactor(mode);
+
+      // pick fastest route for transit
+      let googleRoute = data.routes[0];
+      if (travelMode === 'transit' && data.routes.length > 1) {
+        googleRoute = data.routes.reduce((fastest, current) => {
+          const getDuration = (route: any) => {
+            if (route.duration_in_traffic?.value) return route.duration_in_traffic.value;
+            if (route.duration?.value) return route.duration.value;
+            return route.legs.reduce((sum: number, leg: any) => sum + leg.duration.value, 0);
+          };
+          return getDuration(current) < getDuration(fastest) ? current : fastest;
+        }, data.routes[0]);
+      }
+
+      const distanceMeters = googleRoute.legs.reduce((sum: number, leg: any) => sum + leg.distance.value, 0);
+      const distanceKm = distanceMeters / 1000;
+
+      let durationMinutes: number;
+      const totalDurationSeconds = googleRoute.legs.reduce((sum: number, leg: any) => sum + leg.duration.value, 0);
+
+      if (travelMode === 'transit') {
+        // only count in-vehicle time for transit
+        durationMinutes = this.calculateTransitOnlyDuration(googleRoute);
+      } else {
+        durationMinutes = totalDurationSeconds / 60;
+      }
+
+      const carbonEmission = distanceKm * CarbonCalculationService.getEmissionFactor(mode, undefined, distanceKm);
       const cost = distanceKm * COST_FACTORS[mode];
-      
-      // Create transport segment
+
       const transportSegment: TransportSegment = {
         mode,
         duration: durationMinutes,
@@ -213,14 +288,13 @@ class GoogleMapsService {
         cost,
         provider: this.getProviderName(mode),
       };
-      
-      // Calculate sustainability score using our enhanced service
+
       const sustainabilityScore = CarbonCalculationService.calculateSustainabilityScore(
         carbonEmission,
         distanceKm,
         [{ mode, duration: durationMinutes, distance: distanceKm, carbonEmission, cost }]
       );
-      
+
       return {
         id: `route-${mode}-${Date.now()}`,
         name: this.getRouteName(mode),
@@ -239,31 +313,31 @@ class GoogleMapsService {
     }
   }
 
-  /**
-   * Map our transport modes to Google Maps travel modes
-   */
   private mapTransportModeToGoogleMaps(mode: TransportMode): string {
     switch (mode) {
       case TransportMode.CAR:
         return 'driving';
       case TransportMode.TRAIN:
       case TransportMode.BUS:
-      case TransportMode.METRO:
         return 'transit';
-      case TransportMode.BIKE:
-        return 'bicycling';
-      case TransportMode.WALK:
-        return 'walking';
       case TransportMode.PLANE:
-        return 'driving'; // Fallback, planes not supported by Directions API
+        return 'driving'; // fallback, planes not supported
       default:
         return 'driving';
     }
   }
 
-  /**
-   * Get a human-readable route name
-   */
+  private getTransitModePreference(mode: TransportMode): string | null {
+    switch (mode) {
+      case TransportMode.TRAIN:
+        return 'rail';
+      case TransportMode.BUS:
+        return 'bus';
+      default:
+        return null;
+    }
+  }
+
   private getRouteName(mode: TransportMode): string {
     switch (mode) {
       case TransportMode.CAR:
@@ -274,28 +348,17 @@ class GoogleMapsService {
         return 'Bus';
       case TransportMode.PLANE:
         return 'Flight';
-      case TransportMode.BIKE:
-        return 'Bike';
-      case TransportMode.WALK:
-        return 'Walk';
-      case TransportMode.METRO:
-        return 'Metro';
       default:
         return 'Unknown';
     }
   }
 
-  /**
-   * Get provider name for transport mode
-   */
   private getProviderName(mode: TransportMode): string | undefined {
     switch (mode) {
       case TransportMode.TRAIN:
         return 'Local Rail';
       case TransportMode.BUS:
         return 'Public Bus';
-      case TransportMode.METRO:
-        return 'Metro System';
       case TransportMode.PLANE:
         return 'Airline';
       default:
@@ -303,19 +366,12 @@ class GoogleMapsService {
     }
   }
 
-
-
-  /**
-   * Get place suggestions for autocomplete
-   * Client-side: uses API route to avoid CORS
-   * Server-side: calls Google Places API directly
-   */
+  // autocomplete places
   async getPlaceSuggestions(input: string, location?: { lat: number; lng: number }): Promise<string[]> {
-    // Check if running on server or client
     const isServer = typeof window === 'undefined';
 
     if (!isServer) {
-      // Client-side: use API route to avoid CORS
+      // use API route to avoid CORS
       try {
         const params = new URLSearchParams({ input });
         if (location) {
@@ -332,7 +388,7 @@ class GoogleMapsService {
       }
     }
 
-    // Server-side: direct API call
+    // server-side: direct API call
     this.checkApiKey();
     const url = `${this.baseUrl}/place/autocomplete/json?` +
       `input=${encodeURIComponent(input)}&` +
@@ -357,21 +413,19 @@ class GoogleMapsService {
   }
 }
 
-// Export singleton instance
 export const googleMapsService = new GoogleMapsService();
 
-/**
- * Get routes between two locations (wrapper for calculateRoutes)
- * This function is used by the AI planning service
- */
+// wrapper for AI planning service
 export const getRoutes = async (
   origin: string,
   destination: string,
-  transportModes?: TransportMode[]
+  transportModes?: TransportMode[],
+  travelDate?: string
 ): Promise<RouteOption[]> => {
   return googleMapsService.calculateRoutes(
     origin,
     destination,
-    transportModes || [TransportMode.CAR, TransportMode.TRAIN, TransportMode.BUS, TransportMode.BIKE, TransportMode.WALK]
+    transportModes || [TransportMode.CAR, TransportMode.TRAIN, TransportMode.BUS],
+    travelDate
   );
 };

@@ -12,7 +12,7 @@ const DEFAULT_PREFERENCES: UserPreferencesData = {
   prioritizeSustainability: true,
   maxTravelTime: undefined,
   budgetLimit: undefined,
-  preferredTransportModes: [TransportMode.TRAIN, TransportMode.BUS, TransportMode.WALK, TransportMode.BIKE],
+  preferredTransportModes: [TransportMode.TRAIN, TransportMode.BUS],
   defaultOrigin: undefined,
   defaultDestination: undefined,
   notifications: {

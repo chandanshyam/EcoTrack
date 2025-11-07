@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react';
-import { googleMapsService } from '@/lib/services/googleMapsService';
 
 interface LocationAutocompleteProps {
   value: string;
@@ -26,11 +25,24 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [hasInteracted, setHasInteracted] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
+  const isSelectingRef = useRef(false); // Track if we're selecting from dropdown
 
   useEffect(() => {
+    // Don't fetch suggestions if we're selecting from dropdown
+    if (isSelectingRef.current) {
+      isSelectingRef.current = false;
+      return;
+    }
+
+    // Don't fetch suggestions until user has interacted with the input
+    if (!hasInteracted) {
+      return;
+    }
+
     // Clear suggestions when value is empty
     if (!value.trim()) {
       setSuggestions([]);
@@ -54,7 +66,13 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       if (value.length >= 3) {
         setIsLoading(true);
         try {
-          const results = await googleMapsService.getPlaceSuggestions(value);
+          // Call API route instead of service directly to avoid CORS issues
+          const response = await fetch(`/api/places/autocomplete?input=${encodeURIComponent(value)}`);
+          if (!response.ok) {
+            throw new Error('Failed to fetch suggestions');
+          }
+          const data = await response.json();
+          const results = data.suggestions || [];
           setSuggestions(results);
           setShowSuggestions(results.length > 0);
           setSelectedIndex(-1);
@@ -76,18 +94,21 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         clearTimeout(debounceRef.current);
       }
     };
-  }, [value]);
+  }, [value, hasInteracted]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
+    setHasInteracted(true);
     onChange(newValue);
   };
 
   const handleSuggestionClick = (suggestion: string) => {
+    isSelectingRef.current = true; // Mark that we're selecting from dropdown
     onChange(suggestion);
+    setSuggestions([]);
     setShowSuggestions(false);
     setSelectedIndex(-1);
-    
+
     if (onLocationSelect) {
       onLocationSelect({ address: suggestion });
     }
@@ -112,6 +133,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       case 'Enter':
         e.preventDefault();
         if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
+          isSelectingRef.current = true; // Mark that we're selecting
           handleSuggestionClick(suggestions[selectedIndex]);
         }
         break;
@@ -131,6 +153,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   };
 
   const handleFocus = () => {
+    setHasInteracted(true);
     if (suggestions.length > 0) {
       setShowSuggestions(true);
     }
