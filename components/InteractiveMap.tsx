@@ -8,7 +8,6 @@ import { RouteOption, TransportMode, TransportSegment } from '@/lib/types';
 declare global {
   interface Window {
     google: typeof google;
-    selectRoute: (routeId: string) => void;
   }
 }
 
@@ -17,6 +16,7 @@ interface InteractiveMapProps {
   selectedRouteId?: string;
   onRouteSelect?: (routeId: string) => void;
   className?: string;
+  showHeader?: boolean;
 }
 
 interface MapMarker {
@@ -87,7 +87,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   routes,
   selectedRouteId,
   onRouteSelect,
-  className = ''
+  className = '',
+  showHeader = true
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
@@ -244,29 +245,9 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             </div>
           `).join('')}
         </div>
-        
-        ${onRouteSelect ? `
-          <button 
-            onclick="window.selectRoute('${route.id}')" 
-            style="
-              background: #2a2a2a; 
-              color: #f5f5f0; 
-              border: none; 
-              padding: 8px 16px; 
-              margin-top: 8px; 
-              cursor: pointer; 
-              font-family: 'Courier New', monospace;
-              text-transform: uppercase;
-              font-weight: 600;
-              width: 100%;
-            "
-          >
-            Select This Route
-          </button>
-        ` : ''}
       </div>
     `;
-  }, [onRouteSelect]);
+  }, []);
 
   // Add routes to map
   const addRoutesToMap = useCallback(() => {
@@ -418,20 +399,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     }
   }, [routes, selectedRouteId, onRouteSelect, createSustainabilityInfoContent, clearMapElements]);
 
-  // Set up global route selection function for info window buttons
-  useEffect(() => {
-    if (onRouteSelect) {
-      (window as any).selectRoute = (routeId: string) => {
-        onRouteSelect(routeId);
-      };
-    }
-
-    return () => {
-      if ((window as any).selectRoute) {
-        delete (window as any).selectRoute;
-      }
-    };
-  }, [onRouteSelect]);
 
   // Initialize map on component mount
   useEffect(() => {
@@ -461,15 +428,18 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   }
 
   return (
-    <div className={`card-brutal ${className}`}>
-      <div className="mb-4">
-        <h3 className="heading-brutal text-2xl mb-2">ROUTE MAP</h3>
-        <div className="card-cyan inline-block px-4 py-2">
-          <p className="text-brutal">INTERACTIVE SUSTAINABILITY VIEW</p>
+    <div className={`card-brutal ${className} ${!showHeader ? 'flex flex-col' : ''}`}>
+      {showHeader && (
+        <div className="mb-4">
+          <h3 className="heading-brutal text-2xl mb-2">ROUTE MAP</h3>
+          <div className="card-cyan inline-block px-4 py-2">
+            <p className="text-brutal">INTERACTIVE SUSTAINABILITY VIEW</p>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="relative">
+      {/* Map Container */}
+      <div className={`relative ${showHeader ? 'mb-6' : 'flex-1'}`}>
         {isLoading && (
           <div className="absolute inset-0 bg-neo-white bg-opacity-90 flex items-center justify-center z-10">
             <div className="card-yellow p-6">
@@ -486,35 +456,9 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
         <div
           ref={mapRef}
-          className="w-full h-96 md:h-[500px] border-3 border-neo-black"
-          style={{ minHeight: '400px' }}
+          className={`w-full border-3 border-neo-black ${showHeader ? 'h-96 md:h-[500px]' : 'h-full'}`}
+          style={{ minHeight: showHeader ? '400px' : '100%' }}
         />
-
-        {routes.length > 0 && (
-          <div className="mt-4 card-pink p-4">
-            <h4 className="heading-brutal text-lg mb-2">MAP LEGEND</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-              {Object.entries(TRANSPORT_MODE_ICONS).map(([mode, icon]) => (
-                <div key={mode} className="flex items-center space-x-2">
-                  <span className="text-lg">{icon}</span>
-                  <span className="text-brutal capitalize">{mode}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-3 pt-3 border-t-2 border-neo-black">
-              <div className="flex items-center space-x-4 text-sm">
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 rounded-full bg-neo-green border-2 border-neo-black"></div>
-                  <span className="text-brutal">Origin</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 rounded-full bg-neo-red border-2 border-neo-black"></div>
-                  <span className="text-brutal">Destination</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

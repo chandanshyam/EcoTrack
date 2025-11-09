@@ -6,6 +6,7 @@ EcoTrack is a Next.js-based web application that helps users plan eco-friendly t
 
 - 🌱 **Sustainable Route Planning** - AI-powered analysis of transport options
 - 📊 **Carbon Footprint Tracking** - Real-time emissions calculations and comparisons
+- 💰 **Fare Information** - Actual ticket prices and cost comparisons
 - 📈 **Travel Analytics** - Comprehensive sustainability metrics and insights
 - 🎯 **Goal Setting** - Track and monitor sustainability targets
 - 📱 **Responsive Design** - Works on desktop and mobile devices

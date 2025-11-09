@@ -161,7 +161,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
 
   return (
     <div className="relative">
-      <label htmlFor={id} className="block text-brutal text-lg mb-3 uppercase">
+      <label htmlFor={id} className="block text-brutal text-sm mb-2 uppercase">
         {label}
       </label>
       <div className="relative">
@@ -175,7 +175,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           onBlur={handleBlur}
           onFocus={handleFocus}
           placeholder={placeholder}
-          className="input-brutal w-full uppercase placeholder:text-neo-gray pr-12"
+          className="input-brutal w-full uppercase placeholder:text-neo-gray pr-12 py-2 px-3 text-sm"
           disabled={disabled}
           autoComplete="off"
           aria-expanded={showSuggestions}

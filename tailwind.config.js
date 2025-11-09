@@ -24,6 +24,7 @@ module.exports = {
           'blue': '#4A90E2',
           'orange': '#FF8C42',
           'purple': '#A855F7',
+          'pink': '#FF85C0',
           'gray': '#6B7280',
         },
         // Vibrant Eco-friendly variants
