@@ -102,6 +102,93 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isBestOption, isSel
             </div>
           </div>
 
+          {/* Transit Details Section */}
+          {route.transportModes.some(s => s.transitDetails) && (
+            <div className="w-full mt-4 pt-4 border-t-4 border-neo-black">
+              <h4 className="heading-brutal text-sm mb-3">🚇 TRANSIT DETAILS</h4>
+              <div className="space-y-3">
+                {route.transportModes.map((segment, index) => {
+                  if (!segment.transitDetails) {
+                    return segment.instructions?.toLowerCase().includes('walk') ? (
+                      <div key={index} className="flex items-center gap-2 text-xs opacity-75">
+                        <span>🚶</span>
+                        <span className="text-brutal">Walk {segment.distance.toFixed(1)} km</span>
+                      </div>
+                    ) : null;
+                  }
+
+                  const td = segment.transitDetails;
+                  return (
+                    <div key={index} className="card-white border-l-8" style={{
+                      borderLeftColor: td.lineColor || '#000000'
+                    }}>
+                      {/* Line Badge */}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="px-3 py-1 border-2 border-neo-black font-bold text-sm"
+                            style={{
+                              backgroundColor: td.lineColor || '#000000',
+                              color: td.lineTextColor || '#FFFFFF'
+                            }}
+                          >
+                            {td.lineShortName || td.lineName}
+                          </div>
+                          <span className="text-brutal text-xs">{td.lineName}</span>
+                        </div>
+                        <span className="text-xs opacity-75">{td.agencyName}</span>
+                      </div>
+
+                      {/* Route Info */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <div className="flex items-start gap-2">
+                            <span className="text-xl">📍</span>
+                            <div>
+                              <div className="text-brutal text-xs opacity-75">FROM</div>
+                              <div className="font-bold">{td.departureStop.name}</div>
+                              {td.departureTimeText && (
+                                <div className="text-brutal text-xs text-neo-teal">
+                                  🕐 {td.departureTimeText}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex items-start gap-2">
+                            <span className="text-xl">🏁</span>
+                            <div>
+                              <div className="text-brutal text-xs opacity-75">TO</div>
+                              <div className="font-bold">{td.arrivalStop.name}</div>
+                              {td.arrivalTimeText && (
+                                <div className="text-brutal text-xs text-neo-teal">
+                                  🕐 {td.arrivalTimeText}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Additional Info */}
+                      <div className="flex items-center gap-4 mt-2 pt-2 border-t-2 border-neo-black text-xs">
+                        <span className="text-brutal">
+                          📊 {td.numStops} stops
+                        </span>
+                        {td.headsign && (
+                          <span className="text-brutal opacity-75">
+                            → {td.headsign}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Score Badge */}
           <div className={`${getScoreCardClass(route.sustainabilityScore)} text-center min-w-[120px] shrink-0`}>
             <div className="text-xs font-mono uppercase">Eco Score</div>

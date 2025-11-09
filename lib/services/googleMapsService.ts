@@ -63,14 +63,45 @@ interface GoogleMapsStep {
   transit_details?: {
     arrival_stop: {
       name: string;
+      location: {
+        lat: number;
+        lng: number;
+      };
     };
     departure_stop: {
       name: string;
+      location: {
+        lat: number;
+        lng: number;
+      };
     };
+    arrival_time: {
+      text: string;
+      value: number;  // Unix timestamp
+      time_zone: string;
+    };
+    departure_time: {
+      text: string;
+      value: number;  // Unix timestamp
+      time_zone: string;
+    };
+    headsign: string;
+    headway?: number;  // Time between departures in seconds
     line: {
+      agencies: Array<{
+        name: string;
+        url?: string;
+        phone?: string;
+      }>;
       name: string;
+      short_name?: string;
+      color?: string;      // Hex color
+      text_color?: string; // Hex color
       vehicle: {
-        type: string;
+        name: string;
+        type: string;     // BUS, SUBWAY, TRAIN, TRAM, etc.
+        icon?: string;    // URL to icon
+        local_icon?: string;
       };
     };
     num_stops: number;
@@ -117,6 +148,50 @@ class GoogleMapsService {
   private checkApiKey(): void {
     if (!this.apiKey) {
       throw new Error('Google Maps API key required. This service must only be used server-side.');
+    }
+  }
+
+  /**
+   * Map Google Maps vehicle types to our basic TransportMode enum
+   * All rail-based transit (subway, metro, tram, train) → TRAIN
+   * Buses → BUS
+   */
+  private mapVehicleTypeToTransportMode(vehicleType: string): TransportMode {
+    const type = vehicleType.toUpperCase();
+
+    // Map all buses to BUS
+    if (type.includes('BUS')) {
+      return TransportMode.BUS;
+    }
+
+    // Map all rail-based transit to TRAIN
+    // This includes: subway, metro, tram, light rail, heavy rail, commuter train, etc.
+    const railTypes = ['SUBWAY', 'METRO', 'TRAM', 'RAIL', 'TRAIN', 'MONORAIL', 'LIGHT_RAIL', 'HEAVY_RAIL'];
+    if (railTypes.some(railType => type.includes(railType))) {
+      return TransportMode.TRAIN;
+    }
+
+    // Default to train for other transit types
+    return TransportMode.TRAIN;
+  }
+
+  /**
+   * Map travel mode string to our TransportMode
+   */
+  private mapTravelModeToTransportMode(travelMode: string): TransportMode {
+    const mode = travelMode.toUpperCase();
+    switch (mode) {
+      case 'DRIVING':
+        return TransportMode.CAR;
+      case 'WALKING':
+      case 'BICYCLING':
+        // For walking/biking segments in transit routes, we'll skip them in the segments
+        // or treat them as part of the transit journey
+        return TransportMode.TRAIN; // Will be filtered or handled specially
+      case 'TRANSIT':
+        return TransportMode.TRAIN; // Default, will be refined by vehicle type
+      default:
+        return TransportMode.CAR;
     }
   }
 
@@ -211,6 +286,96 @@ class GoogleMapsService {
     return transitTime / 60; // convert to minutes
   }
 
+  /**
+   * Parse all segments from a Google Maps route
+   * This breaks down multi-modal trips into individual transit segments with full transit details
+   * Note: Walking/biking segments are included but with zero emissions
+   */
+  private parseSegmentsFromRoute(route: GoogleMapsRoute): TransportSegment[] {
+    const segments: TransportSegment[] = [];
+
+    for (const leg of route.legs) {
+      for (const step of leg.steps) {
+        const distanceKm = step.distance.value / 1000;
+        const durationMinutes = step.duration.value / 60;
+
+        // Skip very short walking segments (< 50m) to reduce clutter
+        if (step.travel_mode === 'WALKING' && step.distance.value < 50) {
+          continue;
+        }
+
+        // Determine transport mode
+        let mode: TransportMode;
+        let isWalkingOrBiking = false;
+
+        if (step.travel_mode === 'TRANSIT' && step.transit_details) {
+          mode = this.mapVehicleTypeToTransportMode(step.transit_details.line.vehicle.type);
+        } else if (step.travel_mode === 'WALKING' || step.travel_mode === 'BICYCLING') {
+          // For walking/biking in transit routes, mark as part of transit but track separately
+          mode = TransportMode.TRAIN; // Use train as placeholder, but mark as walking
+          isWalkingOrBiking = true;
+        } else {
+          mode = this.mapTravelModeToTransportMode(step.travel_mode);
+        }
+
+        // Calculate emissions (zero for walking/biking)
+        const carbonEmission = isWalkingOrBiking ? 0 :
+          distanceKm * CarbonCalculationService.getEmissionFactor(mode, undefined, distanceKm);
+
+        // Estimate cost (zero for walking/biking)
+        const cost = isWalkingOrBiking ? 0 :
+          (COST_FACTORS[mode] ? distanceKm * COST_FACTORS[mode] : 0);
+
+        // Build transit details if available
+        let transitDetails;
+        if (step.transit_details) {
+          const td = step.transit_details;
+          transitDetails = {
+            lineName: td.line.name,
+            lineShortName: td.line.short_name,
+            lineColor: td.line.color,
+            lineTextColor: td.line.text_color,
+            agencyName: td.line.agencies?.[0]?.name,
+            agencyUrl: td.line.agencies?.[0]?.url,
+            agencyPhone: td.line.agencies?.[0]?.phone,
+            departureStop: {
+              name: td.departure_stop.name,
+              location: td.departure_stop.location,
+            },
+            arrivalStop: {
+              name: td.arrival_stop.name,
+              location: td.arrival_stop.location,
+            },
+            departureTime: td.departure_time ? new Date(td.departure_time.value * 1000) : undefined,
+            arrivalTime: td.arrival_time ? new Date(td.arrival_time.value * 1000) : undefined,
+            departureTimeText: td.departure_time?.text,
+            arrivalTimeText: td.arrival_time?.text,
+            headsign: td.headsign,
+            numStops: td.num_stops,
+            vehicleType: td.line.vehicle.type,
+            vehicleIcon: td.line.vehicle.icon,
+            headway: td.headway,
+          };
+        }
+
+        const segment: TransportSegment = {
+          mode,
+          duration: durationMinutes,
+          distance: distanceKm,
+          carbonEmission,
+          cost,
+          provider: transitDetails?.agencyName || this.getProviderName(mode),
+          transitDetails,
+          instructions: isWalkingOrBiking ? `${step.travel_mode === 'WALKING' ? 'Walk' : 'Bike'}: ${step.instructions}` : step.instructions,
+        };
+
+        segments.push(segment);
+      }
+    }
+
+    return segments;
+  }
+
   private async calculateSingleRoute(
     origin: Location,
     destination: Location,
@@ -266,45 +431,44 @@ class GoogleMapsService {
 
       const distanceMeters = googleRoute.legs.reduce((sum: number, leg: any) => sum + leg.distance.value, 0);
       const distanceKm = distanceMeters / 1000;
-
-      let durationMinutes: number;
       const totalDurationSeconds = googleRoute.legs.reduce((sum: number, leg: any) => sum + leg.duration.value, 0);
+      const durationMinutes = totalDurationSeconds / 60;
 
-      if (travelMode === 'transit') {
-        // only count in-vehicle time for transit
-        durationMinutes = this.calculateTransitOnlyDuration(googleRoute);
-      } else {
-        durationMinutes = totalDurationSeconds / 60;
-      }
+      // Parse all segments with detailed transit info
+      const segments = this.parseSegmentsFromRoute(googleRoute);
 
-      const carbonEmission = distanceKm * CarbonCalculationService.getEmissionFactor(mode, undefined, distanceKm);
-      const cost = distanceKm * COST_FACTORS[mode];
-
-      const transportSegment: TransportSegment = {
-        mode,
-        duration: durationMinutes,
-        distance: distanceKm,
-        carbonEmission,
-        cost,
-        provider: this.getProviderName(mode),
-      };
+      // Calculate totals from segments
+      const totalCarbonFootprint = segments.reduce((sum, seg) => sum + seg.carbonEmission, 0);
+      const totalCost = segments.reduce((sum, seg) => sum + seg.cost, 0);
 
       const sustainabilityScore = CarbonCalculationService.calculateSustainabilityScore(
-        carbonEmission,
+        totalCarbonFootprint,
         distanceKm,
-        [{ mode, duration: durationMinutes, distance: distanceKm, carbonEmission, cost }]
+        segments
       );
+
+      // Determine the primary mode for route naming
+      let primaryMode = mode;
+      if (travelMode === 'transit' && segments.length > 0) {
+        // Use the actual transit segment (not walking/biking) with the longest distance
+        const transitSegments = segments.filter(s => s.transitDetails !== undefined);
+        if (transitSegments.length > 0) {
+          primaryMode = transitSegments.reduce((prev, current) =>
+            current.distance > prev.distance ? current : prev
+          ).mode;
+        }
+      }
 
       return {
         id: `route-${mode}-${Date.now()}`,
-        name: this.getRouteName(mode),
+        name: this.getRouteName(primaryMode),
         origin,
         destination,
-        transportModes: [transportSegment],
+        transportModes: segments,
         totalDuration: durationMinutes,
         totalDistance: distanceKm,
-        totalCost: cost,
-        totalCarbonFootprint: carbonEmission,
+        totalCost,
+        totalCarbonFootprint,
         sustainabilityScore,
       };
     } catch (error) {
@@ -349,7 +513,7 @@ class GoogleMapsService {
       case TransportMode.PLANE:
         return 'Flight';
       default:
-        return 'Unknown';
+        return 'Transit';
     }
   }
 
