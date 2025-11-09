@@ -3,21 +3,26 @@
 import React, { useState, useCallback } from 'react';
 import { TripPlanner } from '@/components/TripPlanner';
 import { RouteResults } from '@/components/RouteResults';
-import { planTripWithAI } from '@/lib/services/geminiService';
 import { RouteOption, SustainabilityAnalysis, GeolocationCoords } from '@/lib/types';
+import { TravelPreferencesData } from '@/components/TravelPreferences';
 import Header from '@/components/Header';
-
+import { RouteErrorBoundary } from '@/components/ErrorBoundary';
+import { ErrorDisplay } from '@/components/ErrorDisplay';
+import { handleError, logError, AppError } from '@/lib/utils/errorHandling';
+import { logger, analytics } from '@/lib/utils/logging';
 export default function Home() {
   const [routes, setRoutes] = useState<RouteOption[]>([]);
   const [analysis, setAnalysis] = useState<SustainabilityAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<AppError | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
 
   const handlePlanTrip = useCallback(async (
     origin: string, 
     destination: string, 
-    userLocation?: GeolocationCoords
+    userLocation?: GeolocationCoords,
+    travelDate?: string,
+    preferences?: TravelPreferencesData
   ) => {
     setIsLoading(true);
     setError(null);
@@ -25,52 +30,135 @@ export default function Home() {
     setRoutes([]);
     setAnalysis(null);
 
+    // Log user action
+    analytics.trackUserAction('plan_trip', 'trip_planner', {
+      origin,
+      destination,
+      hasUserLocation: !!userLocation,
+      hasTravelDate: !!travelDate,
+      hasPreferences: !!preferences
+    });
+
+    logger.info('Trip planning started', 'trip-planner', {
+      origin,
+      destination,
+      userLocation: userLocation ? 'provided' : 'not_provided',
+      travelDate,
+      preferences
+    });
+
     try {
-      const { routes: fetchedRoutes, analysis: aiAnalysis } = await planTripWithAI(origin, destination, userLocation);
-      
+      // Call API route instead of service directly to keep API keys secure
+      const response = await fetch('/api/routes/plan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          origin,
+          destination,
+          userLocation,
+          travelDate,
+          preferences,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to plan trip');
+      }
+
+      const { routes: fetchedRoutes, analysis: aiAnalysis } = await response.json();
+
       if (fetchedRoutes && fetchedRoutes.length > 0) {
         setRoutes(fetchedRoutes);
         setAnalysis(aiAnalysis);
+
+        logger.info('Trip planning successful', 'trip-planner', {
+          routeCount: fetchedRoutes.length,
+          hasAnalysis: !!aiAnalysis
+        });
+
+        analytics.track('trip_planned_success', {
+          routeCount: fetchedRoutes.length,
+          origin,
+          destination
+        });
       } else {
-        setError("No sustainable routes could be found for this trip.");
+        const noRoutesError = handleError(new Error("No routes found"), 'trip-planning');
+        setError(noRoutesError);
+        logError(noRoutesError, 'trip-planning-no-results');
+
+        analytics.track('trip_planned_no_routes', {
+          origin,
+          destination
+        });
       }
     } catch (err) {
-      console.error(err);
-      setError("An unexpected error occurred while planning your trip. The AI may be busy or the request could not be completed. Please try again later.");
+      const appError = handleError(err, 'trip-planning');
+      setError(appError);
+      logError(appError, 'trip-planning-main');
+      
+      analytics.trackError(
+        err instanceof Error ? err : new Error(String(err)),
+        'trip-planning'
+      );
     } finally {
       setIsLoading(false);
     }
   }, []);
 
+  const handleRetry = useCallback(() => {
+    setError(null);
+    // The user can retry by clicking the plan trip button again
+  }, []);
+
+  const handleDismissError = useCallback(() => {
+    setError(null);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-neo-white">
       <Header />
-      <div className="text-carbon-gray-900 font-sans p-4 sm:p-6 lg:p-8">
-        <main className="container mx-auto">
-          <header className="text-center mb-8">
-            <div className="inline-block bg-white border-2 border-carbon-gray-900 p-3 rounded-md shadow-lg mb-4">
-              <svg className="w-12 h-12 text-eco-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor" />
-              </svg>
+      <div className="container-brutal">
+        <main>
+          {/* Trip Planner Section */}
+          <RouteErrorBoundary>
+            <div className="mb-12">
+              <TripPlanner onPlanTrip={handlePlanTrip} isLoading={isLoading} />
             </div>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-carbon-gray-900">EcoTrack</h1>
-            <p className="mt-2 text-lg text-carbon-gray-700">Your AI-Powered Sustainable Travel Planner</p>
-          </header>
+          </RouteErrorBoundary>
           
-          <TripPlanner onPlanTrip={handlePlanTrip} isLoading={isLoading} />
+          {/* Error Display */}
+          {error && (
+            <ErrorDisplay
+              error={error}
+              onRetry={error.retryable ? handleRetry : undefined}
+              onDismiss={handleDismissError}
+              className="mb-6"
+            />
+          )}
           
-          <RouteResults 
-            routes={routes} 
-            analysis={analysis}
-            isLoading={isLoading} 
-            error={error}
-            hasSearched={hasSearched}
-          />
+          {/* Results Section */}
+          <RouteErrorBoundary>
+            <RouteResults 
+              routes={routes} 
+              analysis={analysis}
+              isLoading={isLoading} 
+              error={error ? error.userMessage : null}
+              hasSearched={hasSearched}
+            />
+          </RouteErrorBoundary>
         </main>
         
-        <footer className="text-center mt-12 text-carbon-gray-600 text-sm">
-          <p>&copy; {new Date().getFullYear()} EcoTrack. Travel Smarter, Live Greener.</p>
+        {/* NeoBrutalism Footer */}
+        <footer className="text-center mt-16">
+          <div className="divider-brutal"></div>
+          <div className="card-teal inline-block px-8 py-4">
+            <p className="text-brutal text-lg">
+              &copy; {new Date().getFullYear()} ECOTRACK - TRAVEL SMARTER, LIVE GREENER
+            </p>
+          </div>
         </footer>
       </div>
     </div>

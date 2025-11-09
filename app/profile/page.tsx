@@ -3,8 +3,6 @@
 import { useSession } from 'next-auth/react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/Button'
-import { Card } from '@/components/ui/Card'
 import { TransportMode, UserPreferences } from '@/lib/types'
 import Header from '@/components/Header'
 
@@ -113,15 +111,17 @@ export default function ProfilePage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-neo-white">
         <Header />
-        <div className="max-w-4xl mx-auto py-8 px-4">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-            <div className="space-y-4">
-              <div className="h-32 bg-gray-200 rounded"></div>
-              <div className="h-48 bg-gray-200 rounded"></div>
+        <div className="container-brutal">
+          <div className="text-center mb-12">
+            <div className="card-yellow inline-block px-8 py-4 bounce-brutal">
+              <p className="text-brutal text-xl">LOADING PROFILE...</p>
             </div>
+          </div>
+          <div className="space-y-6">
+            <div className="card-green h-48 bounce-brutal"></div>
+            <div className="card-pink h-64 bounce-brutal" style={{ animationDelay: '0.2s' }}></div>
           </div>
         </div>
       </div>
@@ -129,127 +129,150 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-neo-white">
       <Header />
-      <div className="max-w-4xl mx-auto py-8 px-4">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Profile Settings</h1>
+      <div className="container-brutal">
+        <div className="text-center mb-12">
+          <h1 className="heading-brutal text-4xl md:text-6xl mb-4">
+            PROFILE <span className="text-neo-pink">SETTINGS</span>
+          </h1>
+          <div className="card-cyan inline-block px-6 py-3">
+            <p className="text-brutal">CUSTOMIZE YOUR TRAVEL PREFERENCES</p>
+          </div>
+        </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-red-600">{error}</p>
+          <div className="status-error mb-8 text-center">
+            <p className="text-lg">{error}</p>
           </div>
         )}
 
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Basic Information */}
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Basic Information</h2>
-            <div className="space-y-4">
+          <div className="card-green">
+            <h2 className="heading-brutal text-2xl mb-6">BASIC INFO</h2>
+            <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
+                <label className="block text-brutal text-lg mb-3">
+                  EMAIL ADDRESS
                 </label>
                 <input
                   type="email"
                   value={session?.user?.email || ''}
                   disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
+                  className="input-brutal w-full opacity-50 cursor-not-allowed"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Name
+                <label className="block text-brutal text-lg mb-3">
+                  DISPLAY NAME
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  placeholder="Enter your name"
+                  className="input-brutal w-full"
+                  placeholder="ENTER YOUR NAME"
                 />
               </div>
             </div>
-          </Card>
+          </div>
 
           {/* Travel Preferences */}
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Travel Preferences</h2>
-            <div className="space-y-6">
-              <div>
-                <label className="flex items-center">
+          <div className="card-yellow">
+            <h2 className="heading-brutal text-2xl mb-6">TRAVEL PREFERENCES</h2>
+            <div className="space-y-8">
+              {/* Sustainability Priority */}
+              <div className="card-brutal p-4">
+                <label className="flex items-center space-x-4">
                   <input
                     type="checkbox"
                     checked={prioritizeSustainability}
                     onChange={(e) => setPrioritizeSustainability(e.target.checked)}
-                    className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                    className="w-6 h-6 border-4 border-neo-black focus:outline-none"
                   />
-                  <span className="ml-2 text-sm font-medium text-gray-700">
-                    Prioritize sustainability in route suggestions
+                  <span className="text-brutal text-lg">
+                    PRIORITIZE SUSTAINABILITY IN ROUTES
                   </span>
                 </label>
               </div>
 
+              {/* Time Limit */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Maximum Travel Time (minutes)
+                <label className="block text-brutal text-lg mb-3">
+                  MAX TRAVEL TIME (MINUTES)
                 </label>
                 <input
                   type="number"
                   value={maxTravelTime || ''}
                   onChange={(e) => setMaxTravelTime(e.target.value ? parseInt(e.target.value) : undefined)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  placeholder="No limit"
+                  className="input-brutal w-full"
+                  placeholder="NO LIMIT"
                   min="0"
                 />
               </div>
 
+              {/* Budget Limit */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Budget Limit (USD)
+                <label className="block text-brutal text-lg mb-3">
+                  BUDGET LIMIT (USD)
                 </label>
                 <input
                   type="number"
                   value={budgetLimit || ''}
                   onChange={(e) => setBudgetLimit(e.target.value ? parseFloat(e.target.value) : undefined)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  placeholder="No limit"
+                  className="input-brutal w-full"
+                  placeholder="NO LIMIT"
                   min="0"
                   step="0.01"
                 />
               </div>
 
+              {/* Transport Modes */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Preferred Transport Modes
+                <label className="block text-brutal text-lg mb-4">
+                  PREFERRED TRANSPORT MODES
                 </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {Object.values(TransportMode).map((mode) => (
-                    <label key={mode} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={preferredTransportModes.includes(mode)}
-                        onChange={() => toggleTransportMode(mode)}
-                        className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                      />
-                      <span className="ml-2 text-sm text-gray-700 capitalize">
-                        {mode}
-                      </span>
-                    </label>
+                    <div key={mode} className="card-brutal p-3">
+                      <label className="flex items-center space-x-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={preferredTransportModes.includes(mode)}
+                          onChange={() => toggleTransportMode(mode)}
+                          className="w-5 h-5 border-3 border-neo-black focus:outline-none"
+                        />
+                        <span className="text-brutal text-sm uppercase">
+                          {mode}
+                        </span>
+                      </label>
+                    </div>
                   ))}
                 </div>
               </div>
             </div>
-          </Card>
+          </div>
 
           {/* Save Button */}
-          <div className="flex justify-end">
-            <Button
+          <div className="text-center">
+            <button
               onClick={handleSave}
               disabled={saving}
-              className="px-6 py-2"
+              className={`btn-primary text-xl px-12 py-4 ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {saving ? 'Saving...' : 'Save Changes'}
-            </Button>
+              {saving ? (
+                <span className="flex items-center space-x-3">
+                  <svg className="w-6 h-6 animate-spin" fill="currentColor" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>SAVING...</span>
+                </span>
+              ) : (
+                'SAVE CHANGES'
+              )}
+            </button>
           </div>
         </div>
       </div>

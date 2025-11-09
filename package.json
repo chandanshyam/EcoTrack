@@ -12,9 +12,11 @@
   },
   "dependencies": {
     "@auth/firebase-adapter": "^2.11.1",
-    "@google/generative-ai": "^0.21.0",
+    "@google/generative-ai": "^0.24.1",
+    "@googlemaps/js-api-loader": "^2.0.2",
     "autoprefixer": "^10.4.0",
     "clsx": "^2.0.0",
+    "dotenv": "^17.2.3",
     "firebase-admin": "^12.7.0",
     "next": "^14.2.0",
     "next-auth": "^4.24.13",

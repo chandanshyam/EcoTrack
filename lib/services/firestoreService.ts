@@ -1,52 +1,46 @@
-// Firebase Admin SDK imports - will be available after npm install
-// import { initializeApp, getApps, cert } from 'firebase-admin/app';
-// import { getFirestore, Firestore, Timestamp } from 'firebase-admin/firestore';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore, Firestore, Timestamp } from 'firebase-admin/firestore';
 import { User, CompletedTrip, RouteOption, EnvironmentalMetrics, TrendData } from '@/lib/types';
 
-// Firebase Admin SDK types and interfaces
-interface Firestore {
-  collection(path: string): any;
-  batch(): any;
-}
-
-interface Timestamp {
-  toDate(): Date;
-  toMillis(): number;
-}
-
-// Mock Firestore implementation for development
+// Initialize Firebase Admin SDK
 let db: Firestore | null = null;
 
 function initializeFirebase(): Firestore {
-  // This will be replaced with actual Firebase initialization after npm install
-  console.warn('Firebase Admin SDK not installed. Using mock implementation.');
-  return {
-    collection: (path: string) => ({
-      doc: (id?: string) => ({
-        id: id || 'mock-id',
-        set: async (data: any) => console.log('Mock set:', path, data),
-        get: async () => ({ exists: false, data: () => null }),
-        update: async (data: any) => console.log('Mock update:', path, data),
-        delete: async () => console.log('Mock delete:', path),
-        collection: (subPath: string) => initializeFirebase().collection(`${path}/${id}/${subPath}`),
-      }),
-      where: () => ({ get: async () => ({ empty: true, docs: [] }) }),
-      orderBy: () => ({ get: async () => ({ empty: true, docs: [] }) }),
-      limit: () => ({ get: async () => ({ empty: true, docs: [] }) }),
-      get: async () => ({ empty: true, docs: [] }),
-    }),
-    batch: () => ({
-      delete: (ref: any) => console.log('Mock batch delete:', ref),
-      commit: async () => console.log('Mock batch commit'),
-    }),
-  };
+  try {
+    // Check if Firebase is already initialized
+    if (getApps().length === 0) {
+      const projectId = process.env.FIREBASE_PROJECT_ID;
+      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+      const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+      if (!projectId || !clientEmail || !privateKey) {
+        throw new Error('Missing Firebase configuration. Please set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY environment variables.');
+      }
+
+      initializeApp({
+        credential: cert({
+          projectId,
+          clientEmail,
+          privateKey,
+        }),
+      });
+
+      console.log('Firebase Admin SDK initialized successfully');
+    }
+
+    return getFirestore();
+  } catch (error) {
+    console.error('Firebase initialization error:', error);
+    throw error;
+  }
 }
 
 // Initialize Firestore
 try {
   db = initializeFirebase();
 } catch (error) {
-  console.error('Firestore initialization error:', error);
+  console.error('Failed to initialize Firestore:', error);
+  console.warn('Firebase Admin SDK not properly configured. Some features will not work.');
 }
 
 /**
@@ -462,6 +456,74 @@ class FirestoreService {
     } catch (error) {
       console.error('Error getting cached route:', error);
       return null;
+    }
+  }
+
+  /**
+   * User preferences management
+   */
+  async getUserPreferences(email: string): Promise<any | null> {
+    try {
+      const usersQuery = this.db.collection('users').where('email', '==', email);
+      const snapshot = await usersQuery.get();
+      
+      if (snapshot.empty) {
+        return null;
+      }
+      
+      const userDoc = snapshot.docs[0];
+      const data = userDoc.data();
+      
+      return data.preferences || null;
+    } catch (error) {
+      console.error('Error getting user preferences:', error);
+      throw new Error('Failed to get user preferences');
+    }
+  }
+
+  async saveUserPreferences(email: string, preferences: any): Promise<void> {
+    try {
+      const usersQuery = this.db.collection('users').where('email', '==', email);
+      const snapshot = await usersQuery.get();
+      
+      if (snapshot.empty) {
+        // Create new user with preferences
+        const userRef = this.db.collection('users').doc();
+        await userRef.set({
+          email,
+          preferences,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      } else {
+        // Update existing user preferences
+        const userDoc = snapshot.docs[0];
+        await userDoc.ref.update({
+          preferences,
+          updatedAt: new Date(),
+        });
+      }
+    } catch (error) {
+      console.error('Error saving user preferences:', error);
+      throw new Error('Failed to save user preferences');
+    }
+  }
+
+  async deleteUserPreferences(email: string): Promise<void> {
+    try {
+      const usersQuery = this.db.collection('users').where('email', '==', email);
+      const snapshot = await usersQuery.get();
+      
+      if (!snapshot.empty) {
+        const userDoc = snapshot.docs[0];
+        await userDoc.ref.update({
+          preferences: null,
+          updatedAt: new Date(),
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting user preferences:', error);
+      throw new Error('Failed to delete user preferences');
     }
   }
 

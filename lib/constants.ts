@@ -6,7 +6,6 @@ export const CARBON_EMISSION_FACTORS = {
   bus: 0.089,
   plane: 0.255,
   bike: 0,
-  walk: 0,
   metro: 0.028,
 } as const
 
@@ -17,7 +16,6 @@ export const TRANSPORT_MODE_NAMES = {
   bus: 'Bus',
   plane: 'Plane',
   bike: 'Bicycle',
-  walk: 'Walking',
   metro: 'Metro/Subway',
 } as const
 

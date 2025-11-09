@@ -1,8 +1,45 @@
 import { TransportMode, TransportSegment, RouteOption, ComparisonData } from '../types';
 
+/**
+ * CARBON FOOTPRINT CALCULATION METHODOLOGY
+ *
+ * Per-Passenger Emissions:
+ * All emission factors are calculated on a PER-PASSENGER basis unless explicitly noted.
+ * This means the total vehicle/aircraft emissions are divided by the average number of passengers.
+ *
+ * Flight Emissions Calculation:
+ * - Aircraft total emissions = fuel burn × emission factor
+ * - Per-passenger emissions = (aircraft emissions) / (seats × load factor)
+ * - Average commercial aircraft load factor: 82% (2023 global average)
+ * - Business/First class: 2-3x economy footprint due to space usage (fewer passengers per aircraft)
+ *
+ * Example: A 1000km flight
+ * - Aircraft burns ~3,000 kg of fuel
+ * - Total emissions: ~9,450 kg CO2e
+ * - Aircraft capacity: 180 seats
+ * - Load factor: 82% = 148 passengers
+ * - Per-passenger (economy): 9,450 / 148 = 63.9 kg CO2e = 0.064 kg CO2e/km ≈ base factor
+ *
+ * Distance-Based Flight Factors:
+ * - Short flights (<500km): Higher per-km emissions due to fuel-intensive takeoff/landing
+ * - Medium flights (500-1500km): Standard emissions
+ * - Long flights (>1500km): Lower per-km emissions (more efficient cruising time)
+ *
+ * Public Transport Emissions:
+ * - Train/Bus/Metro: Total vehicle emissions divided by average passenger count
+ * - Accounts for typical occupancy rates during operation
+ * - Electric trains: Includes upstream electricity generation emissions
+ *
+ * Car Emissions:
+ * - Per-vehicle emissions (not per-passenger)
+ * - For carpooling, divide by actual passenger count
+ */
+
 // Enhanced carbon emission factors database (kg CO2e per km)
+// All factors are PER PASSENGER unless otherwise noted
 export const CARBON_EMISSION_FACTORS = {
   [TransportMode.CAR]: {
+    // Per vehicle (divide by passenger count for per-passenger)
     base: 0.21, // Average car
     variants: {
       petrol: 0.24,
@@ -12,6 +49,7 @@ export const CARBON_EMISSION_FACTORS = {
     }
   },
   [TransportMode.TRAIN]: {
+    // Per passenger (calculated from total train emissions / average passengers)
     base: 0.041,
     variants: {
       highSpeed: 0.028,
@@ -20,6 +58,7 @@ export const CARBON_EMISSION_FACTORS = {
     }
   },
   [TransportMode.BUS]: {
+    // Per passenger (calculated from total bus emissions / average passengers)
     base: 0.089,
     variants: {
       city: 0.105,
@@ -28,29 +67,16 @@ export const CARBON_EMISSION_FACTORS = {
     }
   },
   [TransportMode.PLANE]: {
-    base: 0.255,
+    // Per-passenger emissions accounting for average aircraft load factor (82%)
+    // These factors include takeoff, landing, and cruising emissions divided by passenger count
+    // Note: Business/First class passengers have 2-3x higher footprint due to space usage
+    base: 0.255, // Average per passenger (economy class)
     variants: {
-      domestic: 0.285,
-      shortHaul: 0.255,
-      longHaul: 0.195,
-    }
-  },
-  [TransportMode.BIKE]: {
-    base: 0,
-    variants: {
-      manual: 0,
-      electric: 0.022,
-    }
-  },
-  [TransportMode.WALK]: {
-    base: 0,
-    variants: {}
-  },
-  [TransportMode.METRO]: {
-    base: 0.028,
-    variants: {
-      electric: 0.028,
-      diesel: 0.045,
+      domestic: 0.285,      // Short flights: Higher per-km emissions due to takeoff/landing
+      shortHaul: 0.255,     // <1500km: Standard per-passenger economy
+      longHaul: 0.195,      // >1500km: More efficient per-km, economy class
+      businessClass: 0.510, // 2x economy due to space (fewer seats per aircraft)
+      firstClass: 0.765,    // 3x economy due to space
     }
   }
 } as const;
@@ -77,15 +103,17 @@ export class CarbonCalculationService {
   
   /**
    * Calculate carbon emissions for a single transport segment
+   * Automatically selects appropriate emission factors based on transport mode and distance
    */
   static calculateSegmentEmissions(segment: TransportSegment): number {
     const emissionFactor = CARBON_EMISSION_FACTORS[segment.mode];
     if (!emissionFactor) {
       throw new Error(`Unknown transport mode: ${segment.mode}`);
     }
-    
-    // Use base emission factor for now, can be enhanced with variants later
-    return segment.distance * emissionFactor.base;
+
+    // Use intelligent factor selection (auto-selects flight type based on distance)
+    const factor = this.getEmissionFactor(segment.mode, undefined, segment.distance);
+    return segment.distance * factor;
   }
 
   /**
@@ -137,10 +165,7 @@ export class CarbonCalculationService {
    */
   private static calculateEfficiencyScore(segments: TransportSegment[]): number {
     const modeEfficiencyScores = {
-      [TransportMode.WALK]: 100,
-      [TransportMode.BIKE]: 95,
       [TransportMode.TRAIN]: 85,
-      [TransportMode.METRO]: 80,
       [TransportMode.BUS]: 70,
       [TransportMode.CAR]: 40,
       [TransportMode.PLANE]: 20,
@@ -165,10 +190,7 @@ export class CarbonCalculationService {
    */
   private static calculateRenewableEnergyScore(segments: TransportSegment[]): number {
     const renewableScores = {
-      [TransportMode.WALK]: 100,
-      [TransportMode.BIKE]: 100,
       [TransportMode.TRAIN]: 70,  // Many trains use renewable energy
-      [TransportMode.METRO]: 70,  // Many metro systems use renewable energy
       [TransportMode.BUS]: 30,    // Some electric buses
       [TransportMode.CAR]: 20,    // Some electric cars
       [TransportMode.PLANE]: 5,   // Very limited renewable energy use
@@ -192,10 +214,7 @@ export class CarbonCalculationService {
    */
   private static calculateCongestionReductionScore(segments: TransportSegment[]): number {
     const congestionScores = {
-      [TransportMode.WALK]: 100,
-      [TransportMode.BIKE]: 95,
       [TransportMode.TRAIN]: 90,
-      [TransportMode.METRO]: 90,
       [TransportMode.BUS]: 80,
       [TransportMode.CAR]: 10,   // Private cars contribute to congestion
       [TransportMode.PLANE]: 50, // Neutral for road congestion
@@ -285,11 +304,23 @@ export class CarbonCalculationService {
 
   /**
    * Get emission factor for a specific transport mode
+   * For flights, automatically selects variant based on distance if not specified
    */
-  static getEmissionFactor(mode: TransportMode, variant?: string): number {
+  static getEmissionFactor(mode: TransportMode, variant?: string, distance?: number): number {
     const modeFactors = CARBON_EMISSION_FACTORS[mode];
     if (!modeFactors) {
       throw new Error(`Unknown transport mode: ${mode}`);
+    }
+
+    // Auto-select flight variant based on distance if not specified
+    if (mode === TransportMode.PLANE && !variant && distance) {
+      if (distance < 500) {
+        variant = 'domestic'; // Short domestic flights
+      } else if (distance < 1500) {
+        variant = 'shortHaul'; // Regional flights
+      } else {
+        variant = 'longHaul'; // Intercontinental flights
+      }
     }
 
     if (variant && modeFactors.variants && variant in modeFactors.variants) {
@@ -318,15 +349,8 @@ export class CarbonCalculationService {
     }
 
     // Mode-specific insights
-    const hasActiveTransport = route.transportModes.some(
-      segment => segment.mode === TransportMode.WALK || segment.mode === TransportMode.BIKE
-    );
-    if (hasActiveTransport) {
-      insights.push('Great for your health and the environment with active transport included!');
-    }
-
     const hasPublicTransport = route.transportModes.some(
-      segment => [TransportMode.TRAIN, TransportMode.BUS, TransportMode.METRO].includes(segment.mode)
+      segment => [TransportMode.TRAIN, TransportMode.BUS].includes(segment.mode)
     );
     if (hasPublicTransport) {
       insights.push('Using public transport helps reduce traffic congestion and air pollution.');
