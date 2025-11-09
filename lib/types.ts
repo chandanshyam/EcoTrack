@@ -5,6 +5,44 @@ export enum TransportMode {
   PLANE = 'plane',
 }
 
+export type TransitDetails = {
+  // Line information
+  lineName: string;
+  lineShortName?: string;
+  lineColor?: string;
+  lineTextColor?: string;
+
+  // Agency information
+  agencyName?: string;
+  agencyUrl?: string;
+  agencyPhone?: string;
+
+  // Stop information
+  departureStop: {
+    name: string;
+    location?: { lat: number; lng: number };
+  };
+  arrivalStop: {
+    name: string;
+    location?: { lat: number; lng: number };
+  };
+
+  // Timing information
+  departureTime?: Date;
+  arrivalTime?: Date;
+  departureTimeText?: string;
+  arrivalTimeText?: string;
+
+  // Trip information
+  headsign?: string;  // e.g., "Downtown via Broadway"
+  numStops: number;
+  vehicleType: string;  // BUS, SUBWAY, TRAIN, TRAM, etc.
+  vehicleIcon?: string;
+
+  // Real-time information (if available)
+  headway?: number;  // Time between departures in seconds
+}
+
 export type TransportSegment = {
   mode: TransportMode;
   duration: number; // minutes
@@ -12,6 +50,12 @@ export type TransportSegment = {
   carbonEmission: number; // kg CO2e
   cost: number;
   provider?: string;
+
+  // Enhanced transit data (only present for transit modes)
+  transitDetails?: TransitDetails;
+
+  // For walking/biking segments in multi-modal trips
+  instructions?: string;
 }
 
 export type RouteOption = {

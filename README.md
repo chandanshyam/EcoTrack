@@ -66,6 +66,49 @@ npm run build
 npm start
 ```
 
+### 🌍 Grasshopper Transit Integration (Optional)
+
+EcoTrack supports real-time public transit routing via the Grasshopper Directions API.
+
+**To enable:**
+1. Set environment variables in `.env.local`:
+```bash
+GRASSHOPPER_API_KEY=your_grasshopper_api_key_here
+GRASSHOPPER_BASE_URL=https://api.grasshopper.com/v2/directions
+```
+
+2. Test the endpoint:
+```bash
+curl "http://localhost:3000/api/routes/grasshopper?origin=37.7749,-122.4194&destination=34.0522,-118.2437"
+```
+
+3. Check configuration status:
+```bash
+curl -X POST http://localhost:3000/api/routes/grasshopper
+```
+
+**API Response Format:**
+```json
+{
+  "success": true,
+  "data": {
+    "routes": [
+      {
+        "id": "route_123",
+        "transportMode": "bus",
+        "departureTime": "2025-01-15T10:00:00Z",
+        "arrivalTime": "2025-01-15T14:00:00Z",
+        "durationMinutes": 240,
+        "distanceKm": 615,
+        "operator": "Greyhound",
+        "price": { "amount": 45, "currency": "USD" },
+        "emission": { "co2_per_passenger": 18.2 }
+      }
+    ]
+  }
+}
+```
+
 ## Project Structure
 
 ```
