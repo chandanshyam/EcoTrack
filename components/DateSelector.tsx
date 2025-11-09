@@ -46,7 +46,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
 
   return (
     <div>
-      <label htmlFor={id} className="block text-brutal text-lg mb-3 uppercase">
+      <label htmlFor={id} className="block text-brutal text-sm mb-2 uppercase">
         {label}
       </label>
       <div className="relative">
@@ -58,19 +58,12 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
           min={defaultMinDate}
           max={defaultMaxDate}
           disabled={disabled}
-          className="input-brutal w-full font-mono text-lg uppercase"
+          className="input-brutal w-full font-mono text-sm uppercase py-2 px-3"
           aria-describedby={`${id}-help`}
         />
-        
-        {/* Display formatted date below input */}
-        {value && (
-          <div className="mt-2 px-3 py-1 bg-neo-cyan border-2 border-neo-black text-brutal text-sm">
-            {formatDateForDisplay(value)}
-          </div>
-        )}
       </div>
-      
-      <div id={`${id}-help`} className="mt-2 text-sm font-mono text-gray-600">
+
+      <div id={`${id}-help`} className="mt-1 text-xs font-mono text-gray-600">
         SELECT YOUR TRAVEL DATE
       </div>
     </div>

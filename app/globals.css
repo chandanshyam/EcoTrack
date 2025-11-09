@@ -73,6 +73,10 @@
     @apply card-brutal-color bg-neo-cyan shadow-brutal-color shadow-neo-black text-neo-black;
   }
 
+  .card-pink {
+    @apply card-brutal-color bg-neo-pink shadow-brutal-color shadow-neo-black text-neo-black;
+  }
+
   .card-blue {
     @apply card-brutal-color bg-neo-blue shadow-brutal-color shadow-neo-black text-neo-white;
   }
@@ -146,6 +150,86 @@
 
   .status-info {
     @apply bg-neo-cyan border-4 border-neo-black text-neo-black font-bold px-4 py-2 uppercase tracking-wide shadow-brutal-sm;
+  }
+
+  /* Tabbed Interface Styles */
+  .results-container {
+    @apply w-full;
+  }
+
+  .tab-navigation {
+    @apply flex border-b-4 border-neo-black gap-0 mb-6 bg-neo-white flex-wrap;
+  }
+
+  .tab {
+    @apply px-6 py-3 border-none border-b-4 border-transparent font-bold cursor-pointer transition-all duration-200 uppercase text-sm md:text-base flex-1 md:flex-initial min-w-[120px] text-center;
+  }
+
+  /* Light green shades for inactive tabs - left to right gradient */
+  .tab-routes {
+    @apply bg-[#E8F5E9]; /* Lightest green */
+  }
+
+  .tab-insights {
+    @apply bg-[#C8E6C9]; /* Medium light green */
+  }
+
+  .tab-map {
+    @apply bg-[#A5D6A7]; /* Medium green */
+  }
+
+  /* Hover states - slightly darker green */
+  .tab-routes:hover:not(:disabled):not(.active) {
+    @apply bg-[#C8E6C9] translate-y-[-2px];
+  }
+
+  .tab-insights:hover:not(:disabled):not(.active) {
+    @apply bg-[#A5D6A7] translate-y-[-2px];
+  }
+
+  .tab-map:hover:not(:disabled):not(.active) {
+    @apply bg-[#81C784] translate-y-[-2px];
+  }
+
+  /* Active states - all use teal/blue color */
+  .tab-routes.active {
+    @apply bg-neo-teal text-neo-black border-b-neo-black shadow-brutal-sm;
+  }
+
+  .tab-insights.active {
+    @apply bg-neo-teal text-neo-black border-b-neo-black shadow-brutal-sm;
+  }
+
+  .tab-map.active {
+    @apply bg-neo-teal text-neo-black border-b-neo-black shadow-brutal-sm;
+  }
+
+  .tab:disabled {
+    @apply opacity-50 cursor-not-allowed bg-gray-50;
+  }
+
+  .tab-content {
+    @apply min-h-[400px];
+  }
+
+  .fade-in {
+    animation: fadeIn 0.3s ease-in;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Score Badge for Map Legend */
+  .score-badge {
+    @apply px-3 py-1 text-sm font-bold border-2 border-neo-black;
   }
 }
 @layer utilities {

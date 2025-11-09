@@ -5,7 +5,6 @@ EcoTrack is a Next.js-based web application that helps users plan eco-friendly t
 ## Features
 
 - 🌱 **Sustainable Route Planning** - AI-powered analysis of transport options
-- 🚍 **Real Transit Data Integration** - Live bus/train schedules powered by OpenTripPlanner
 - 📊 **Carbon Footprint Tracking** - Real-time emissions calculations and comparisons
 - 💰 **Fare Information** - Actual ticket prices and cost comparisons
 - 📈 **Travel Analytics** - Comprehensive sustainability metrics and insights
@@ -66,28 +65,6 @@ EcoTrack is a Next.js-based web application that helps users plan eco-friendly t
 npm run build
 npm start
 ```
-
-### 🌍 Real Transit Data Integration
-
-EcoTrack supports real-time bus/train routing powered by OpenTripPlanner APIs.
-
-**To enable:**
-1. Set `OTP_BASE_URL` in `.env.local`:
-```bash
-OTP_BASE_URL=https://your-otp-instance/otp/routers/default
-```
-
-2. Run `npm run dev` and use the Transit API:
-```bash
-curl -X POST http://localhost:3001/api/routes/transit \
-  -H "Content-Type: application/json" \
-  -d '{
-    "from": "40.7128,-74.0060",
-    "to": "40.7580,-73.9855"
-  }'
-```
-
-For detailed setup instructions, see [`docs/transit-integration.md`](./docs/transit-integration.md).
 
 ## Project Structure
 

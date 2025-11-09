@@ -43,7 +43,7 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isBestOption, isSel
     if (isSelected) {
       baseClass += ' ring-4 ring-neo-blue bg-neo-blue bg-opacity-10';
     } else if (isBestOption) {
-      baseClass += ' card-green';
+      baseClass += ' bg-neo-lime';
     }
     if (onSelect) {
       baseClass += ' cursor-pointer';
@@ -65,85 +65,98 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isBestOption, isSel
           }
         } : undefined}
       >
-        {isBestOption && (
-          <div className="absolute -top-4 -right-4 status-success rotate-12">
-            BEST ECO CHOICE!
-          </div>
-        )}
+        {/* Header Section - Horizontal Layout */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-4 border-b-4 border-neo-black">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              {isBestOption && (
+                <div className="status-success px-3 py-1 text-sm">
+                  🏆 BEST
+                </div>
+              )}
+              {isSelected && (
+                <div className="card-blue px-3 py-1">
+                  <span className="text-brutal text-sm">SELECTED</span>
+                </div>
+              )}
+            </div>
+            <h3 className="heading-brutal text-xl md:text-2xl">
+              {route.name.toUpperCase()}
+            </h3>
 
-        {isSelected && (
-          <div className="absolute -top-4 -left-4 card-blue rotate-[-12deg] px-3 py-1">
-            <span className="text-brutal text-sm">SELECTED</span>
-          </div>
-        )}
-
-        {onSelect && (
-          <div className="absolute top-4 right-4">
-            <div className="card-yellow px-2 py-1">
-              <span className="text-brutal text-xs">CLICK TO SELECT</span>
+            {/* Transport Modes - Inline */}
+            <div className="flex items-center mt-3 flex-wrap gap-2">
+              {route.transportModes.map((segment, index) => (
+                <React.Fragment key={index}>
+                  <div className="flex items-center gap-1 bg-neo-mustard border-2 border-neo-black px-2 py-1">
+                    <TransportIcon mode={segment.mode} className="w-4 h-4" />
+                    <span className="text-brutal text-xs">
+                      {segment.mode.toUpperCase()}
+                    </span>
+                  </div>
+                  {index < route.transportModes.length - 1 && (
+                    <span className="text-brutal text-lg">→</span>
+                  )}
+                </React.Fragment>
+              ))}
             </div>
           </div>
-        )}
 
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-          <h3 className="heading-brutal text-xl md:text-2xl mb-2 md:mb-0">
-            {route.name.toUpperCase()}
-          </h3>
-          <div className={`${getScoreCardClass(route.sustainabilityScore)} text-center min-w-[100px]`}>
-            <div className="text-sm font-mono">SCORE</div>
-            <div className="text-2xl font-bold">{route.sustainabilityScore}</div>
+          {/* Score Badge */}
+          <div className={`${getScoreCardClass(route.sustainabilityScore)} text-center min-w-[120px] shrink-0`}>
+            <div className="text-xs font-mono uppercase">Eco Score</div>
+            <div className="text-3xl font-bold">{route.sustainabilityScore}</div>
+            <div className="text-xs font-mono">/100</div>
           </div>
         </div>
 
-        <div className="mb-6">
-          <h4 className="text-brutal text-lg mb-3">TRANSPORT MODES:</h4>
-          <div className="flex items-center space-x-3 flex-wrap gap-2">
-            {route.transportModes.map((segment, index) => (
-              <React.Fragment key={index}>
-                <div className="card-yellow px-3 py-2 flex items-center gap-2">
-                  <TransportIcon mode={segment.mode} className="w-6 h-6" />
-                  <span className="text-brutal text-sm">
-                    {segment.mode.toUpperCase()}
-                  </span>
-                </div>
-                {index < route.transportModes.length - 1 && (
-                  <span className="text-brutal text-2xl">+</span>
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="card-cyan text-center">
-            <p className="text-brutal text-sm mb-1">TIME</p>
+        {/* Metrics Section - 4 Column Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          <div className="card-cyan text-center py-3">
+            <div className="text-2xl mb-1">⏱</div>
+            <p className="text-brutal text-xs mb-1 opacity-75">TIME</p>
             <p className="heading-brutal text-lg">
               {formatDuration(route.totalDuration)}
             </p>
           </div>
-          <div className="card-yellow text-center">
-            <p className="text-brutal text-sm mb-1">COST</p>
+          <div className="card-yellow text-center py-3">
+            <div className="text-2xl mb-1">💵</div>
+            <p className="text-brutal text-xs mb-1 opacity-75">COST</p>
             <p className="heading-brutal text-lg">
               ${Math.round(route.totalCost ?? 0)}
             </p>
           </div>
-          <div className="card-teal text-center">
-            <p className="text-brutal text-sm mb-1">DISTANCE</p>
+          <div className="card-teal text-center py-3">
+            <div className="text-2xl mb-1">📏</div>
+            <p className="text-brutal text-xs mb-1 opacity-75">DISTANCE</p>
             <p className="heading-brutal text-lg">
-              {kmToMiles(route.totalDistance)} MILES
+              {kmToMiles(route.totalDistance)} MI
             </p>
           </div>
-          <div className="card-coral text-center">
-            <p className="text-brutal text-sm mb-1">CO₂</p>
+          <div className="card-coral text-center py-3">
+            <div className="text-2xl mb-1">🌱</div>
+            <p className="text-brutal text-xs mb-1 opacity-75">CO₂</p>
             <p className="heading-brutal text-lg">
               {formatCarbonFootprint(route.totalCarbonFootprint ?? 0)}
             </p>
           </div>
         </div>
 
-        {/* Save Trip Button */}
+        {/* Action Buttons */}
         {onSave && (
-          <div className="mt-6 pt-6 border-t-4 border-neo-black">
+          <div className="flex gap-3">
+            {onSelect && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelect();
+                }}
+                className="btn-secondary flex-1 py-2 text-sm"
+              >
+                {isSelected ? 'SELECTED ✓' : 'SELECT ROUTE'}
+              </button>
+            )}
+
             {isAuthenticated ? (
               <button
                 onClick={(e) => {
@@ -151,13 +164,13 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isBestOption, isSel
                   onSave(route);
                 }}
                 disabled={isSaving}
-                className={`btn-accent w-full text-lg py-3 flex items-center justify-center gap-3 ${
+                className={`btn-accent flex-1 py-2 text-sm flex items-center justify-center gap-2 ${
                   isSaving ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
                 {isSaving ? (
                   <>
-                    <svg className="w-5 h-5 animate-spin" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 animate-spin" fill="currentColor" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
@@ -165,20 +178,17 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isBestOption, isSel
                   </>
                 ) : (
                   <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span>SAVE TRIP TO HISTORY</span>
+                    <span>SAVE TRIP</span>
                   </>
                 )}
               </button>
             ) : (
-              <div className="card-yellow p-4 text-center">
-                <p className="text-brutal text-sm mb-2">SIGN IN TO SAVE TRIPS</p>
-                <a href="/auth/signin" className="btn-secondary w-full py-2">
-                  SIGN IN
-                </a>
-              </div>
+              <a href="/auth/signin" className="btn-secondary flex-1 py-2 text-sm text-center">
+                SIGN IN TO SAVE
+              </a>
             )}
           </div>
         )}

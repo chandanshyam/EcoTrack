@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { RouteOption, SustainabilityAnalysis, TransportMode } from '@/lib/types';
-import { RouteCard } from '@/components/RouteCard';
-import { InteractiveMap } from '@/components/InteractiveMap';
+import { ResultsTabs } from '@/components/ResultsTabs';
 import { FilterControls, FilterOptions, SortOption } from '@/components/FilterControls';
 import { ToastContainer, ToastType } from '@/components/Toast';
 
@@ -282,91 +281,21 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
 
   return (
     <div className="mt-12 w-full max-w-5xl mx-auto space-y-8">
-      {/* AI Analysis Section */}
-      {analysis && (
-        <div className="card-green">
-          <div className="mb-6">
-            <h2 className="heading-brutal text-2xl mb-2">AI INSIGHTS</h2>
-            <div className="card-yellow inline-block px-4 py-2">
-              <p className="text-brutal">SUSTAINABILITY ANALYSIS</p>
-            </div>
-          </div>
-          
-          <div className="space-y-6">
-            <div className="card-brutal">
-              <p className="text-brutal text-lg">{analysis.summary}</p>
-            </div>
-
-            {analysis.comparison && (
-              <div className="card-pink">
-                <h3 className="heading-brutal text-lg mb-4">COMPARISON</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="card-brutal text-center">
-                    <p className="text-brutal text-sm mb-2">YOUR BEST OPTION</p>
-                    <p className="heading-brutal text-2xl text-neo-green">
-                      {(routes[0]?.totalCarbonFootprint ?? 0).toFixed(2)} KG CO₂
-                    </p>
-                  </div>
-                  <div className="card-brutal text-center">
-                    <p className="text-brutal text-sm mb-2">CONVENTIONAL CAR</p>
-                    <p className="heading-brutal text-2xl text-neo-red">
-                      {(analysis.comparison.conventionalFootprint ?? 0).toFixed(2)} KG CO₂
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-4 card-yellow p-4">
-                  <p className="text-brutal text-center">{analysis.comparison.savings}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-      
-      {/* Filter Controls */}
-      <FilterControls
+      {/* Tabbed Results Interface with integrated filter controls */}
+      <ResultsTabs
+        routes={filteredAndSortedRoutes}
+        analysis={analysis}
+        selectedRouteId={selectedRouteId}
+        onRouteSelect={handleRouteSelect}
+        onSaveTrip={handleSaveTrip}
+        savingRouteId={savingRouteId}
+        isAuthenticated={!!session}
+        sortBy={filters.sortBy}
+        sortOrder={filters.sortOrder}
         filters={filters}
-        onChange={setFilters}
-        routeCount={filteredAndSortedRoutes.length}
-        disabled={isLoading}
+        onFiltersChange={setFilters}
+        isLoading={isLoading}
       />
-
-      {/* Interactive Map Section */}
-      <div className="mb-8">
-        <InteractiveMap 
-          routes={filteredAndSortedRoutes}
-          selectedRouteId={selectedRouteId}
-          onRouteSelect={handleRouteSelect}
-          className="w-full"
-        />
-      </div>
-
-      {/* Routes Section */}
-      <div>
-        <div className="mb-6">
-          <h2 className="heading-brutal text-2xl mb-2">YOUR ROUTES</h2>
-          <div className="card-pink inline-block px-4 py-2">
-            <p className="text-brutal">
-              SORTED BY {filters.sortBy.toUpperCase()} ({filters.sortOrder === 'desc' ? 'HIGH TO LOW' : 'LOW TO HIGH'})
-            </p>
-          </div>
-        </div>
-        
-        <div className="space-y-6">
-          {filteredAndSortedRoutes.map((route, index) => (
-            <RouteCard
-              key={route.id}
-              route={route}
-              isBestOption={index === 0 && filters.sortBy === 'sustainability' && filters.sortOrder === 'desc'}
-              isSelected={selectedRouteId === route.id}
-              onSelect={() => handleRouteSelect(route.id)}
-              onSave={handleSaveTrip}
-              isSaving={savingRouteId === route.id}
-              isAuthenticated={!!session}
-            />
-          ))}
-        </div>
-      </div>
 
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} onRemove={removeToast} />
