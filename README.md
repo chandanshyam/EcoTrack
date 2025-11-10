@@ -22,6 +22,43 @@ EcoTrack is a Next.js-based web application that helps users plan eco-friendly t
 - 📜 **Travel History** - Save and track your completed trips
 - 🔄 **Real-Time Updates** - Dashboard metrics update instantly when trips are saved
 
+## 🏗️ Architecture
+
+EcoTrack follows a modern serverless architecture built on Next.js 14+ with the App Router.
+
+![Architecture Diagram](./docs/EcoTrack-Arch.png)
+
+### System Overview
+
+The application consists of three main layers:
+
+1. **Frontend Layer** - React 18 components with TypeScript, styled using Tailwind CSS with a custom Neobrutalism design system
+2. **API Layer** - Next.js API routes handling authentication, route planning, and user data management
+3. **Service Layer** - Integration services for Google Maps, Gemini AI, carbon calculations, and Firestore database operations
+
+### Key Data Flows
+
+**Trip Planning Flow:**
+```
+User Input → Trip Planner Component → /api/routes/plan
+→ Gemini Service (orchestrator)
+→ Google Maps Service (parallel route fetching: driving, transit, walking, biking)
+→ Carbon Calculation Service (emissions & sustainability scoring)
+→ Gemini AI (sustainability analysis)
+→ Route Results Component (display with interactive map)
+```
+
+**Save Trip & Analytics Flow:**
+```
+User Saves Trip → /api/user/history (POST)
+→ Firestore Service (save trip, update metrics)
+→ Dashboard Component (GET /api/user/analytics)
+→ Real-time metric calculations (carbon saved, trips, trends)
+→ Updated dashboard display
+```
+
+For detailed architecture diagrams including sequence flows and component relationships, see the [Mermaid diagrams](#mermaid-diagrams) section below.
+
 ## 🛠️ Tech Stack
 
 - **Frontend**: React 18 with Next.js 14+ (App Router)

@@ -673,5 +673,7 @@ For deployment issues:
 
 ---
 
+![Deployment flow](./docs/image.png)
+
 **Last Updated:** 2025-11-10
 **Version:** 1.0.0
