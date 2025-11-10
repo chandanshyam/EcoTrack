@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { firestoreService } from '@/lib/services/firestoreService'
 import { EnvironmentalMetrics, TrendData, CompletedTrip, TransportMode } from '@/lib/types'
-import { getOrCreateUserProfile } from '@/lib/api-helpers'
 import { CARBON_EMISSION_FACTORS } from '@/lib/services/carbonCalculationService'
 
 // Mark this route as dynamic
@@ -49,8 +48,15 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get or create user profile
-    const userProfile = await getOrCreateUserProfile(session.user.email, session.user.name)
+    // Get user profile (don't auto-create for analytics)
+    const userProfile = await firestoreService.getUserProfile(session.user.email)
+
+    if (!userProfile) {
+      return NextResponse.json(
+        { error: 'User profile not found' },
+        { status: 404 }
+      )
+    }
 
     const { searchParams } = new URL(request.url)
     const period = searchParams.get('period') as 'month' | 'year' | null
@@ -163,8 +169,13 @@ async function calculateInsights(
     monthlyTrends[0] || { period: 'N/A', sustainabilityScore: 0 }
   ).period
 
-  // Calculate average trips per month
-  const monthsWithTrips = monthlyTrends.filter(trend => trend.carbonFootprint > 0).length
+  // Calculate average trips per month based on actual trip dates
+  const uniqueMonths = new Set<string>()
+  trips.forEach(trip => {
+    const monthKey = `${trip.completedAt.getFullYear()}-${String(trip.completedAt.getMonth() + 1).padStart(2, '0')}`
+    uniqueMonths.add(monthKey)
+  })
+  const monthsWithTrips = uniqueMonths.size
   const averageTripsPerMonth = monthsWithTrips > 0 ? trips.length / monthsWithTrips : 0
 
   // Analyze transport modes
@@ -194,14 +205,54 @@ async function calculateInsights(
     .sort((a, b) => b.carbonSaved - a.carbonSaved)
     .slice(0, 5)
 
-  // Calculate sustainability improvement (comparing first 3 months to last 3 months)
-  const recentTrends = monthlyTrends.slice(-3)
-  const earlierTrends = monthlyTrends.slice(0, 3)
-  
-  const recentAvgScore = recentTrends.reduce((sum, trend) => sum + trend.sustainabilityScore, 0) / recentTrends.length
-  const earlierAvgScore = earlierTrends.reduce((sum, trend) => sum + trend.sustainabilityScore, 0) / earlierTrends.length
-  
-  const sustainabilityImprovement = recentAvgScore - earlierAvgScore
+  // Calculate sustainability improvement (comparing first 3 months to last 3 months based on actual trips)
+  let sustainabilityImprovement = 0
+
+  if (trips.length >= 2) {
+    // Group trips by month
+    const tripsByMonth = new Map<string, CompletedTrip[]>()
+    trips.forEach(trip => {
+      const monthKey = `${trip.completedAt.getFullYear()}-${String(trip.completedAt.getMonth() + 1).padStart(2, '0')}`
+      if (!tripsByMonth.has(monthKey)) {
+        tripsByMonth.set(monthKey, [])
+      }
+      tripsByMonth.get(monthKey)!.push(trip)
+    })
+
+    // Sort months chronologically
+    const sortedMonths = Array.from(tripsByMonth.keys()).sort()
+
+    if (sortedMonths.length >= 2) {
+      // Get first and last 3 months (or however many we have)
+      const monthsToCompare = Math.min(3, Math.floor(sortedMonths.length / 2))
+      const earlierMonths = sortedMonths.slice(0, monthsToCompare)
+      const recentMonths = sortedMonths.slice(-monthsToCompare)
+
+      // Calculate average scores for earlier months
+      let earlierTotalScore = 0
+      let earlierTripCount = 0
+      earlierMonths.forEach(month => {
+        tripsByMonth.get(month)!.forEach(trip => {
+          earlierTotalScore += trip.route.sustainabilityScore
+          earlierTripCount++
+        })
+      })
+      const earlierAvgScore = earlierTripCount > 0 ? earlierTotalScore / earlierTripCount : 0
+
+      // Calculate average scores for recent months
+      let recentTotalScore = 0
+      let recentTripCount = 0
+      recentMonths.forEach(month => {
+        tripsByMonth.get(month)!.forEach(trip => {
+          recentTotalScore += trip.route.sustainabilityScore
+          recentTripCount++
+        })
+      })
+      const recentAvgScore = recentTripCount > 0 ? recentTotalScore / recentTripCount : 0
+
+      sustainabilityImprovement = recentAvgScore - earlierAvgScore
+    }
+  }
 
   // Goal progress (example: 50% reduction in carbon footprint compared to conventional methods)
   const totalConventionalFootprint = trips.reduce((sum, trip) => 

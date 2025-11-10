@@ -12,7 +12,7 @@ export default function Header() {
         <div className="flex justify-between items-center h-20">
           {/* Logo Section */}
           <div className="flex items-center">
-            <Link href="/" className="flex items-center space-x-3 hover-glitch">
+            <Link href="/" className="flex items-center space-x-3">
               <div className="card-green p-2">
                 <span className="text-brutal text-2xl">E</span>
               </div>

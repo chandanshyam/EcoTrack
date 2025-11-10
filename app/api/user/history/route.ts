@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { firestoreService } from '@/lib/services/firestoreService'
 import { CompletedTrip, TravelHistoryResponse, EnvironmentalMetrics, TrendData } from '@/lib/types'
-import { getOrCreateUserProfile } from '@/lib/api-helpers'
 
 // Mark this route as dynamic
 export const dynamic = 'force-dynamic'
@@ -18,8 +17,15 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get or create user profile
-    const userProfile = await getOrCreateUserProfile(session.user.email, session.user.name)
+    // Get user profile (don't auto-create for history)
+    const userProfile = await firestoreService.getUserProfile(session.user.email)
+
+    if (!userProfile) {
+      return NextResponse.json(
+        { error: 'User profile not found' },
+        { status: 404 }
+      )
+    }
 
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get('startDate')
@@ -83,8 +89,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get or create user profile
-    const userProfile = await getOrCreateUserProfile(session.user.email, session.user.name)
+    // Get user profile (don't auto-create for history)
+    const userProfile = await firestoreService.getUserProfile(session.user.email)
+
+    if (!userProfile) {
+      return NextResponse.json(
+        { error: 'User profile not found' },
+        { status: 404 }
+      )
+    }
 
     const body = await request.json()
     const { route, carbonFootprint, carbonSaved, completedAt } = body
@@ -110,16 +123,22 @@ export async function POST(request: NextRequest) {
 
     // Regenerate sustainability targets in the background (don't wait for it)
     // This updates targets based on the new trip data
-    fetch(`${request.nextUrl.origin}/api/user/targets`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cookie': request.headers.get('cookie') || ''
+    try {
+      if (typeof fetch !== 'undefined') {
+        fetch(`${request.nextUrl.origin}/api/user/targets`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': request.headers.get('cookie') || ''
+          }
+        }).catch(error => {
+          console.error('Failed to regenerate targets:', error)
+          // Don't fail the trip save if target regeneration fails
+        })
       }
-    }).catch(error => {
-      console.error('Failed to regenerate targets:', error)
-      // Don't fail the trip save if target regeneration fails
-    })
+    } catch (error) {
+      // Silently ignore errors in background target regeneration
+    }
 
     return NextResponse.json(savedTrip, { status: 201 })
   } catch (error) {

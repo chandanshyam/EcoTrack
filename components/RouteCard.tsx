@@ -89,22 +89,14 @@ export const RouteCard: React.FC<RouteCardProps> = ({ route, isBestOption, isSel
                 </div>
               )}
             </div>
-            <h3 className="heading-brutal text-xl md:text-2xl">
-              {route.name.toUpperCase()}
-            </h3>
-
-            {/* Transport Modes - Inline */}
-            <div className="flex items-center mt-3 flex-wrap gap-2">
-              {route.transportModes.map((segment, index) => (
-                <React.Fragment key={index}>
-                  <div className="flex items-center gap-1 bg-neo-mustard border-2 border-neo-black p-2" title={segment.mode.toUpperCase()}>
-                    <TransportIcon mode={segment.mode} className="w-5 h-5" />
-                  </div>
-                  {index < route.transportModes.length - 1 && (
-                    <span className="text-brutal text-lg">→</span>
-                  )}
-                </React.Fragment>
-              ))}
+            <div className="flex items-center gap-3">
+              {/* Primary transport mode icon */}
+              <div className="bg-neo-mustard border-2 border-neo-black p-2">
+                <TransportIcon mode={route.transportModes[0].mode} className="w-6 h-6" />
+              </div>
+              <h3 className="heading-brutal text-xl md:text-2xl">
+                {route.name.toUpperCase()}
+              </h3>
             </div>
 
             {/* Transit Details - Show for transit routes only */}

@@ -71,7 +71,7 @@ FIREBASE_PROJECT_ID=$(gcloud secrets versions access latest --secret="FIREBASE_P
 FIREBASE_CLIENT_EMAIL=$(gcloud secrets versions access latest --secret="FIREBASE_CLIENT_EMAIL" --project="$PROJECT_ID")
 FIREBASE_PRIVATE_KEY=$(gcloud secrets versions access latest --secret="FIREBASE_PRIVATE_KEY" --project="$PROJECT_ID")
 NEXTAUTH_SECRET=$(gcloud secrets versions access latest --secret="NEXTAUTH_SECRET" --project="$PROJECT_ID")
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$(gcloud secrets versions access latest --secret="GOOGLE_MAPS_API_KEY" --project="$PROJECT_ID")
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$(gcloud secrets versions access latest --secret="NEXT_PUBLIC_GOOGLE_MAPS_API_KEY" --project="$PROJECT_ID")
 
 echo -e "${GREEN}✓ Secrets fetched${NC}"
 echo ""
@@ -117,8 +117,8 @@ gcloud run deploy "$SERVICE_NAME" \
     --timeout "$TIMEOUT" \
     --port 3000 \
     --concurrency 80 \
-    --set-env-vars "NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyDIZTfzDreJJM15nYl_dhBBq7GvIHtpHes" \
-    --set-secrets "GOOGLE_MAPS_API_KEY=GOOGLE_MAPS_API_KEY:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest,NEXTAUTH_SECRET=NEXTAUTH_SECRET:latest,NEXTAUTH_URL=NEXTAUTH_URL:latest,GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID:latest,GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET:latest,FIREBASE_PROJECT_ID=FIREBASE_PROJECT_ID:latest,FIREBASE_PRIVATE_KEY=FIREBASE_PRIVATE_KEY:latest,FIREBASE_CLIENT_EMAIL=FIREBASE_CLIENT_EMAIL:latest" \
+    --set-env-vars "NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1" \
+    --set-secrets "GOOGLE_MAPS_API_KEY=GOOGLE_MAPS_API_KEY:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest,NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:latest,NEXTAUTH_SECRET=NEXTAUTH_SECRET:latest,NEXTAUTH_URL=NEXTAUTH_URL:latest,GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID:latest,GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET:latest,FIREBASE_PROJECT_ID=FIREBASE_PROJECT_ID:latest,FIREBASE_PRIVATE_KEY=FIREBASE_PRIVATE_KEY:latest,FIREBASE_CLIENT_EMAIL=FIREBASE_CLIENT_EMAIL:latest" \
     --service-account "$SERVICE_ACCOUNT" \
     --labels "app=ecotrack,managed-by=manual" \
     --project "$PROJECT_ID"

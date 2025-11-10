@@ -95,14 +95,23 @@ describe('/api/sustainability/analyze', () => {
       expect(data.analysis[0].insights).toHaveLength(3);
       expect(data.analysis[0].recommendations).toHaveLength(3);
       expect(data.aiInsights).toBeDefined();
-      expect(data.recommendations).toBeInstanceOf(Array);
+      expect(Array.isArray(data.recommendations)).toBe(true);
     });
 
     it('should validate required fields', async () => {
       const request = new NextRequest('http://localhost:3000/api/sustainability/analyze', {
         method: 'POST',
         body: JSON.stringify({
-          routes: [],
+          routes: [
+            {
+              legs: [
+                {
+                  distance: { value: 300000 },
+                  duration: { value: 14400 }
+                }
+              ]
+            }
+          ],
           // Missing travelDate
         }),
       });
@@ -229,7 +238,7 @@ describe('/api/sustainability/analyze', () => {
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data.recommendations).toBeInstanceOf(Array);
+      expect(Array.isArray(data.recommendations)).toBe(true);
       expect(data.recommendations.length).toBeGreaterThan(0);
       expect(data.recommendations.length).toBeLessThanOrEqual(8); // Should be limited to 8
     });
@@ -257,7 +266,7 @@ describe('/api/sustainability/analyze', () => {
       expect(data.message).toBe('Sustainability analysis endpoint');
       expect(data.usage).toBeDefined();
       expect(data.example).toBeDefined();
-      expect(data.features).toBeInstanceOf(Array);
+      expect(Array.isArray(data.features)).toBe(true);
       expect(data.features).toHaveLength(4);
     });
   });

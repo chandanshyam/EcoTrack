@@ -447,10 +447,10 @@ class GoogleMapsService {
 
       return {
         id: `route-${mode}-${Date.now()}`,
-        name: this.getRouteName(primaryMode),
+        name: this.getRouteName(mode),
         origin,
         destination,
-        transportModes: segments,
+        transportModes: [transportSegment],
         totalDuration: durationMinutes,
         totalDistance: distanceMiles,
         totalCost: cost,

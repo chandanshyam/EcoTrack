@@ -331,20 +331,20 @@ export default function SustainabilityDashboard({ className = '' }: Sustainabili
               <div className="flex justify-between items-center mb-2">
                 <span className="text-brutal text-sm">SUSTAINABILITY SCORE</span>
                 <span className="text-brutal text-sm">
-                  {Math.round(metrics.averageSustainabilityScore)}/{currentTarget.sustainabilityScore}
+                  {Math.round((metrics.totalCarbonSaved / currentTarget.carbonSaved) * 100)}/100
                 </span>
               </div>
               <div className="bg-neo-white border-4 border-neo-black h-6 relative">
                 <div
                   className="bg-neo-cyan h-full border-r-4 border-neo-black transition-all duration-500"
                   style={{
-                    width: `${Math.min((metrics.averageSustainabilityScore / currentTarget.sustainabilityScore) * 100, 100)}%`
+                    width: `${Math.min((metrics.totalCarbonSaved / currentTarget.carbonSaved) * 100, 100)}%`
                   }}
                 ></div>
               </div>
               <div className="flex justify-between text-xs text-brutal mt-1">
                 <span>0</span>
-                <span>{Math.round((metrics.averageSustainabilityScore / currentTarget.sustainabilityScore) * 100)}%</span>
+                <span>{Math.round((metrics.totalCarbonSaved / currentTarget.carbonSaved) * 100)}%</span>
               </div>
             </div>
 
