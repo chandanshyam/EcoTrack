@@ -71,6 +71,7 @@ FIREBASE_PROJECT_ID=$(gcloud secrets versions access latest --secret="FIREBASE_P
 FIREBASE_CLIENT_EMAIL=$(gcloud secrets versions access latest --secret="FIREBASE_CLIENT_EMAIL" --project="$PROJECT_ID")
 FIREBASE_PRIVATE_KEY=$(gcloud secrets versions access latest --secret="FIREBASE_PRIVATE_KEY" --project="$PROJECT_ID")
 NEXTAUTH_SECRET=$(gcloud secrets versions access latest --secret="NEXTAUTH_SECRET" --project="$PROJECT_ID")
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$(gcloud secrets versions access latest --secret="GOOGLE_MAPS_API_KEY" --project="$PROJECT_ID")
 
 echo -e "${GREEN}✓ Secrets fetched${NC}"
 echo ""
@@ -84,6 +85,7 @@ docker build \
   --build-arg FIREBASE_CLIENT_EMAIL="$FIREBASE_CLIENT_EMAIL" \
   --build-arg FIREBASE_PRIVATE_KEY="$FIREBASE_PRIVATE_KEY" \
   --build-arg NEXTAUTH_SECRET="$NEXTAUTH_SECRET" \
+  --build-arg NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY" \
   -t "$IMAGE_NAME" \
   -f Dockerfile \
   .

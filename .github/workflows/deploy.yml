@@ -43,6 +43,13 @@ jobs:
         env:
           NODE_ENV: production
           NEXT_TELEMETRY_DISABLED: 1
+          NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
+          # Real credentials from GitHub Secrets (needed for build to succeed)
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
 
   deploy:
     name: Deploy to Cloud Run
@@ -69,10 +76,33 @@ jobs:
       - name: Configure Docker for GCR
         run: gcloud auth configure-docker
 
+      - name: Fetch secrets from Secret Manager
+        id: secrets
+        run: |
+          echo "Fetching secrets from Secret Manager..."
+          echo "FIREBASE_PROJECT_ID=$(gcloud secrets versions access latest --secret=FIREBASE_PROJECT_ID)" >> $GITHUB_OUTPUT
+          echo "FIREBASE_CLIENT_EMAIL=$(gcloud secrets versions access latest --secret=FIREBASE_CLIENT_EMAIL)" >> $GITHUB_OUTPUT
+          # Private key needs special handling for multiline
+          FIREBASE_PRIVATE_KEY=$(gcloud secrets versions access latest --secret=FIREBASE_PRIVATE_KEY)
+          echo "FIREBASE_PRIVATE_KEY<<EOF" >> $GITHUB_OUTPUT
+          echo "$FIREBASE_PRIVATE_KEY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "NEXTAUTH_SECRET=$(gcloud secrets versions access latest --secret=NEXTAUTH_SECRET)" >> $GITHUB_OUTPUT
+          echo "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$(gcloud secrets versions access latest --secret=GOOGLE_MAPS_API_KEY)" >> $GITHUB_OUTPUT
+
       - name: Build and push Docker image
         run: |
           IMAGE_TAG="gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
-          docker build -t "$IMAGE_TAG" -f Dockerfile .
+          docker build \
+            --platform linux/amd64 \
+            --build-arg FIREBASE_PROJECT_ID="${{ steps.secrets.outputs.FIREBASE_PROJECT_ID }}" \
+            --build-arg FIREBASE_CLIENT_EMAIL="${{ steps.secrets.outputs.FIREBASE_CLIENT_EMAIL }}" \
+            --build-arg FIREBASE_PRIVATE_KEY="${{ steps.secrets.outputs.FIREBASE_PRIVATE_KEY }}" \
+            --build-arg NEXTAUTH_SECRET="${{ steps.secrets.outputs.NEXTAUTH_SECRET }}" \
+            --build-arg NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="${{ steps.secrets.outputs.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}" \
+            -t "$IMAGE_TAG" \
+            -f Dockerfile \
+            .
           docker push "$IMAGE_TAG"
           docker tag "$IMAGE_TAG" "gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest"
           docker push "gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest"
@@ -91,8 +121,8 @@ jobs:
             --timeout 300 \
             --concurrency 80 \
             --port 3000 \
-            --set-env-vars "NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1" \
-            --set-secrets "GOOGLE_MAPS_API_KEY=GOOGLE_MAPS_API_KEY:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest,NEXTAUTH_SECRET=NEXTAUTH_SECRET:latest,GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID:latest,GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET:latest,FIREBASE_PROJECT_ID=FIREBASE_PROJECT_ID:latest,FIREBASE_PRIVATE_KEY=FIREBASE_PRIVATE_KEY:latest,FIREBASE_CLIENT_EMAIL=FIREBASE_CLIENT_EMAIL:latest" \
+            --set-env-vars "NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}" \
+            --set-secrets "GOOGLE_MAPS_API_KEY=GOOGLE_MAPS_API_KEY:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest,NEXTAUTH_SECRET=NEXTAUTH_SECRET:latest,NEXTAUTH_URL=NEXTAUTH_URL:latest,GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID:latest,GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET:latest,FIREBASE_PROJECT_ID=FIREBASE_PROJECT_ID:latest,FIREBASE_PRIVATE_KEY=FIREBASE_PRIVATE_KEY:latest,FIREBASE_CLIENT_EMAIL=FIREBASE_CLIENT_EMAIL:latest" \
             --service-account "ecotrack-cloud-run@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
             --labels "app=ecotrack,deployed-by=github-actions,commit=${{ github.sha }}"
 

@@ -27,6 +27,7 @@ ARG FIREBASE_PROJECT_ID
 ARG FIREBASE_CLIENT_EMAIL
 ARG FIREBASE_PRIVATE_KEY
 ARG NEXTAUTH_SECRET
+ARG NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
 # Set build-time environment variables
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -34,8 +35,8 @@ ENV NODE_ENV=production
 
 # NEXT_PUBLIC_ vars must be set at build time (they get embedded in the browser bundle)
 # This key is PUBLIC anyway (visible to anyone who uses the website)
-# It should be protected via Google Cloud Console API restrictions (HTTP referrer restrictions)
-ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyDIZTfzDreJJM15nYl_dhBBq7GvIHtpHes
+# It should be protected via Google Cloud Console API restrictions
+ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
 # Set secrets as ENV for the build process only (from build args passed by Cloud Build)
 # The REAL credentials are injected at RUNTIME via Google Cloud Secret Manager
