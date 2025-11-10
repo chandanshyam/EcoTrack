@@ -58,10 +58,35 @@ gcloud services enable \
 echo -e "${GREEN}✓ APIs enabled${NC}"
 echo ""
 
+# Configure Docker to use gcloud as a credential helper
+echo -e "${YELLOW}Configuring Docker authentication...${NC}"
+gcloud auth configure-docker --quiet
+
+echo -e "${GREEN}✓ Docker authenticated${NC}"
+echo ""
+
+# Fetch secrets from Secret Manager
+echo -e "${YELLOW}Fetching secrets from Secret Manager...${NC}"
+FIREBASE_PROJECT_ID=$(gcloud secrets versions access latest --secret="FIREBASE_PROJECT_ID" --project="$PROJECT_ID")
+FIREBASE_CLIENT_EMAIL=$(gcloud secrets versions access latest --secret="FIREBASE_CLIENT_EMAIL" --project="$PROJECT_ID")
+FIREBASE_PRIVATE_KEY=$(gcloud secrets versions access latest --secret="FIREBASE_PRIVATE_KEY" --project="$PROJECT_ID")
+NEXTAUTH_SECRET=$(gcloud secrets versions access latest --secret="NEXTAUTH_SECRET" --project="$PROJECT_ID")
+
+echo -e "${GREEN}✓ Secrets fetched${NC}"
+echo ""
+
 # Build the Docker image
 echo -e "${YELLOW}Building Docker image...${NC}"
 IMAGE_NAME="gcr.io/${PROJECT_ID}/${SERVICE_NAME}:$(git rev-parse --short HEAD 2>/dev/null || echo 'latest')"
-docker build -t "$IMAGE_NAME" -f Dockerfile .
+docker build \
+  --platform linux/amd64 \
+  --build-arg FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID" \
+  --build-arg FIREBASE_CLIENT_EMAIL="$FIREBASE_CLIENT_EMAIL" \
+  --build-arg FIREBASE_PRIVATE_KEY="$FIREBASE_PRIVATE_KEY" \
+  --build-arg NEXTAUTH_SECRET="$NEXTAUTH_SECRET" \
+  -t "$IMAGE_NAME" \
+  -f Dockerfile \
+  .
 
 echo -e "${GREEN}✓ Docker image built${NC}"
 echo ""
@@ -90,8 +115,8 @@ gcloud run deploy "$SERVICE_NAME" \
     --timeout "$TIMEOUT" \
     --port 3000 \
     --concurrency 80 \
-    --set-env-vars "NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1" \
-    --set-secrets "GOOGLE_MAPS_API_KEY=GOOGLE_MAPS_API_KEY:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest,NEXTAUTH_SECRET=NEXTAUTH_SECRET:latest,GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID:latest,GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET:latest,FIREBASE_PROJECT_ID=FIREBASE_PROJECT_ID:latest,FIREBASE_PRIVATE_KEY=FIREBASE_PRIVATE_KEY:latest,FIREBASE_CLIENT_EMAIL=FIREBASE_CLIENT_EMAIL:latest" \
+    --set-env-vars "NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1,NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyDIZTfzDreJJM15nYl_dhBBq7GvIHtpHes" \
+    --set-secrets "GOOGLE_MAPS_API_KEY=GOOGLE_MAPS_API_KEY:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest,NEXTAUTH_SECRET=NEXTAUTH_SECRET:latest,NEXTAUTH_URL=NEXTAUTH_URL:latest,GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID:latest,GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET:latest,FIREBASE_PROJECT_ID=FIREBASE_PROJECT_ID:latest,FIREBASE_PRIVATE_KEY=FIREBASE_PRIVATE_KEY:latest,FIREBASE_CLIENT_EMAIL=FIREBASE_CLIENT_EMAIL:latest" \
     --service-account "$SERVICE_ACCOUNT" \
     --labels "app=ecotrack,managed-by=manual" \
     --project "$PROJECT_ID"
