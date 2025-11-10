@@ -267,6 +267,194 @@ Respond with a JSON object:
   }
 };
 
+// US average travel carbon emissions (based on EPA data)
+const US_AVERAGE_MONTHLY_EMISSIONS = 400; // kg CO2 per person per month
+const US_AVERAGE_YEARLY_EMISSIONS = 4800; // kg CO2 per person per year
+
+// generate sustainability targets based on user's travel history
+export const generateSustainabilityTargets = async (
+  travelHistory: {
+    totalTrips: number;
+    totalCarbonFootprint: number;
+    totalCarbonSaved: number;
+    averageSustainabilityScore: number;
+    monthlyMetrics: Array<{
+      month: string;
+      carbonFootprint: number;
+      carbonSaved: number;
+      tripCount: number;
+      sustainabilityScore: number;
+    }>;
+    yearlyMetrics: Array<{
+      year: string;
+      carbonFootprint: number;
+      carbonSaved: number;
+      tripCount: number;
+      sustainabilityScore: number;
+    }>;
+  }
+): Promise<{
+  monthly: {
+    carbonReduction: number;
+    sustainabilityScore: number;
+    carbonSaved: number;
+    tripCount: number;
+    description: string;
+  };
+  yearly: {
+    carbonReduction: number;
+    sustainabilityScore: number;
+    carbonSaved: number;
+    tripCount: number;
+    description: string;
+  };
+}> => {
+  if (!genAI || !process.env.GEMINI_API_KEY) {
+    console.warn("Gemini API key not configured, returning default targets");
+    return {
+      monthly: {
+        carbonReduction: 20,
+        sustainabilityScore: 75,
+        carbonSaved: US_AVERAGE_MONTHLY_EMISSIONS,
+        tripCount: 10,
+        description: "Reduce carbon emissions by 20% compared to conventional travel methods"
+      },
+      yearly: {
+        carbonReduction: 30,
+        sustainabilityScore: 80,
+        carbonSaved: US_AVERAGE_YEARLY_EMISSIONS,
+        tripCount: 100,
+        description: "Achieve 30% carbon reduction and 80+ sustainability score annually"
+      }
+    };
+  }
+
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+  // Calculate recent trends
+  const recentMonths = travelHistory.monthlyMetrics.slice(-3);
+  const avgMonthlyCarbon = recentMonths.reduce((sum, m) => sum + m.carbonFootprint, 0) / Math.max(recentMonths.length, 1);
+  const avgMonthlySaved = recentMonths.reduce((sum, m) => sum + m.carbonSaved, 0) / Math.max(recentMonths.length, 1);
+  const avgMonthlyTrips = recentMonths.reduce((sum, m) => sum + m.tripCount, 0) / Math.max(recentMonths.length, 1);
+  const avgMonthlyScore = recentMonths.reduce((sum, m) => sum + m.sustainabilityScore, 0) / Math.max(recentMonths.length, 1);
+
+  const prompt = `
+You are EcoTrack's sustainability goal advisor. Based on the user's travel history, generate realistic and motivating monthly and yearly sustainability targets.
+
+User's Current Travel Statistics:
+- Total trips completed: ${travelHistory.totalTrips}
+- Total carbon footprint: ${travelHistory.totalCarbonFootprint.toFixed(2)} kg CO2e
+- Total carbon saved: ${travelHistory.totalCarbonSaved.toFixed(2)} kg CO2e
+- Average sustainability score: ${travelHistory.averageSustainabilityScore.toFixed(1)}/100
+
+Recent 3-Month Averages:
+- Monthly carbon footprint: ${avgMonthlyCarbon.toFixed(2)} kg CO2e
+- Monthly carbon saved: ${avgMonthlySaved.toFixed(2)} kg CO2e
+- Monthly trips: ${avgMonthlyTrips.toFixed(1)}
+- Monthly sustainability score: ${avgMonthlyScore.toFixed(1)}/100
+
+Recent Monthly Data:
+${JSON.stringify(recentMonths, null, 2)}
+
+Yearly Data:
+${JSON.stringify(travelHistory.yearlyMetrics, null, 2)}
+
+Generate personalized sustainability targets that are:
+1. **Realistic**: Based on the user's current patterns and achievable with effort
+2. **Motivating**: Challenging enough to drive improvement but not discouraging
+3. **Progressive**: Show improvement over their current performance
+
+For MONTHLY targets, consider:
+- If user has few trips (< 5), set modest improvement targets (10-15% better)
+- If user already has good scores (>70), aim for 5-10% improvement
+- If user has lower scores (<70), aim for 15-25% improvement
+- Target should be based on next month's expected performance
+
+For YEARLY targets, consider:
+- More ambitious than monthly (20-40% improvement)
+- Account for seasonal variations and growth
+- Build on monthly target achievements
+
+Calculate ONLY these values (other values are pre-set):
+- **carbonReduction**: Target percentage reduction in carbon emissions compared to conventional travel (10-50%)
+- **sustainabilityScore**: Target average sustainability score (60-100, MUST be between 0-100)
+- **tripCount**: Expected number of trips to complete
+
+NOTE:
+- Do NOT generate carbonSaved values - they are set to US averages (${US_AVERAGE_MONTHLY_EMISSIONS} kg/month, ${US_AVERAGE_YEARLY_EMISSIONS} kg/year)
+- Sustainability score MUST be a number between 0 and 100 (NOT percentage, just the score)
+- Focus on achievable improvement based on user's current scores
+
+Respond with a JSON object in this exact format:
+{
+  "monthly": {
+    "carbonReduction": number (percentage, e.g., 25 for 25%),
+    "sustainabilityScore": number (0-100, current avg: ${avgMonthlyScore.toFixed(1)}),
+    "tripCount": number,
+    "description": "string"
+  },
+  "yearly": {
+    "carbonReduction": number (percentage),
+    "sustainabilityScore": number (0-100, current avg: ${travelHistory.averageSustainabilityScore.toFixed(1)}),
+    "tripCount": number,
+    "description": "string"
+  }
+}
+`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    let text = result.response.text();
+
+    // Extract JSON from response
+    if (text.includes('```json')) {
+      text = text.substring(text.indexOf('```json') + 7);
+      text = text.substring(0, text.indexOf('```'));
+    } else if (text.includes('```')) {
+      text = text.substring(text.indexOf('```') + 3);
+      text = text.substring(0, text.indexOf('```'));
+    }
+
+    const targets = JSON.parse(text.trim());
+
+    // Add constant carbon saved targets based on US averages
+    targets.monthly.carbonSaved = US_AVERAGE_MONTHLY_EMISSIONS;
+    targets.yearly.carbonSaved = US_AVERAGE_YEARLY_EMISSIONS;
+
+    // Ensure sustainability scores are capped at 100
+    targets.monthly.sustainabilityScore = Math.min(100, Math.max(0, targets.monthly.sustainabilityScore));
+    targets.yearly.sustainabilityScore = Math.min(100, Math.max(0, targets.yearly.sustainabilityScore));
+
+    return targets;
+
+  } catch (error) {
+    console.error("Target generation failed:", error);
+
+    // Return smart defaults based on user's actual data
+    const monthlyTarget = avgMonthlyScore > 0 ? avgMonthlyScore + 10 : 75;
+    const yearlyTarget = travelHistory.averageSustainabilityScore > 0
+      ? travelHistory.averageSustainabilityScore + 15
+      : 80;
+
+    return {
+      monthly: {
+        carbonReduction: avgMonthlySaved > 0 ? 20 : 15,
+        sustainabilityScore: Math.min(100, Math.max(60, monthlyTarget)),
+        carbonSaved: US_AVERAGE_MONTHLY_EMISSIONS,
+        tripCount: avgMonthlyTrips > 0 ? Math.ceil(avgMonthlyTrips) : 10,
+        description: "Improve your monthly sustainability by choosing greener transport options"
+      },
+      yearly: {
+        carbonReduction: travelHistory.totalCarbonSaved > 0 ? 30 : 25,
+        sustainabilityScore: Math.min(100, Math.max(70, yearlyTarget)),
+        carbonSaved: US_AVERAGE_YEARLY_EMISSIONS,
+        tripCount: travelHistory.totalTrips > 0 ? Math.ceil(travelHistory.totalTrips * 1.2) : 100,
+        description: "Make sustainable travel your default choice and reduce your annual carbon footprint"
+      }
+    };
+  }
+};
+
 // main trip planning function
 export const planTripWithAI = async (
   origin: string,

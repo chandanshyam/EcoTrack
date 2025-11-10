@@ -3,6 +3,20 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 
+interface SustainabilityTarget {
+  carbonReduction: number
+  sustainabilityScore: number
+  carbonSaved: number
+  tripCount: number
+  description: string
+}
+
+interface TargetsData {
+  monthly: SustainabilityTarget
+  yearly: SustainabilityTarget
+  generatedAt: string
+}
+
 interface AnalyticsData {
   metrics: {
     totalCarbonFootprint: number
@@ -47,6 +61,7 @@ interface SustainabilityDashboardProps {
 export default function SustainabilityDashboard({ className = '' }: SustainabilityDashboardProps) {
   const { data: session } = useSession()
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
+  const [targetsData, setTargetsData] = useState<TargetsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'year'>('month')
@@ -54,19 +69,33 @@ export default function SustainabilityDashboard({ className = '' }: Sustainabili
   useEffect(() => {
     if (session?.user?.email) {
       fetchAnalytics()
+      fetchTargets()
     }
-  }, [session, selectedPeriod]) // fetchAnalytics is stable since it doesn't depend on changing values
+  }, [session, selectedPeriod])
+
+  // Add event listener to refresh dashboard when trips are saved
+  useEffect(() => {
+    const handleTripSaved = () => {
+      if (session?.user?.email) {
+        fetchAnalytics()
+        fetchTargets()
+      }
+    }
+
+    window.addEventListener('tripSaved', handleTripSaved)
+    return () => window.removeEventListener('tripSaved', handleTripSaved)
+  }, [session])
 
   const fetchAnalytics = async () => {
     try {
       setLoading(true)
       setError(null)
-      
+
       const response = await fetch(`/api/user/analytics?period=${selectedPeriod}`)
       if (!response.ok) {
         throw new Error('Failed to fetch analytics data')
       }
-      
+
       const data = await response.json()
       setAnalyticsData(data)
     } catch (err) {
@@ -74,6 +103,22 @@ export default function SustainabilityDashboard({ className = '' }: Sustainabili
       console.error('Analytics fetch error:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchTargets = async () => {
+    try {
+      const response = await fetch('/api/user/targets')
+      if (!response.ok) {
+        console.warn('Failed to fetch targets, using defaults')
+        return
+      }
+
+      const data = await response.json()
+      setTargetsData(data)
+    } catch (err) {
+      console.error('Targets fetch error:', err)
+      // Don't set error state, just log - targets are optional
     }
   }
 
@@ -149,12 +194,30 @@ export default function SustainabilityDashboard({ className = '' }: Sustainabili
   const { metrics, insights, trends } = analyticsData
   const improvementIndicator = getImprovementIndicator(insights.sustainabilityImprovement)
 
+  // Get current target based on selected period
+  const currentTarget = targetsData
+    ? (selectedPeriod === 'month' ? targetsData.monthly : targetsData.yearly)
+    : null
+
   return (
     <div className={`space-y-8 ${className}`}>
       {/* Header with Period Selector */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h2 className="heading-brutal text-3xl">SUSTAINABILITY DASHBOARD</h2>
         <div className="flex gap-2">
+          <button
+            onClick={() => {
+              fetchAnalytics()
+              fetchTargets()
+            }}
+            className="btn-brutal px-4 py-2 text-sm bg-neo-cyan hover:translate-x-1 hover:translate-y-1 transition-transform"
+            title="Refresh dashboard data"
+          >
+            <svg className="w-4 h-4 inline-block mr-1" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            REFRESH
+          </button>
           <button
             onClick={() => setSelectedPeriod('month')}
             className={`btn-brutal px-4 py-2 text-sm ${
@@ -217,30 +280,94 @@ export default function SustainabilityDashboard({ className = '' }: Sustainabili
         </div>
       </div>
 
-      {/* Progress and Goals */}
-      {insights.goalProgress && (
+      {/* AI-Generated Sustainability Targets */}
+      {currentTarget && (
         <div className="card-brutal">
-          <h3 className="heading-brutal text-2xl mb-6">SUSTAINABILITY GOAL PROGRESS</h3>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+            <h3 className="heading-brutal text-2xl">
+              {selectedPeriod === 'month' ? 'MONTHLY' : 'YEARLY'} SUSTAINABILITY TARGETS
+            </h3>
+            <div className="card-cyan inline-block px-4 py-2 text-xs">
+              <span className="text-brutal">AI-POWERED GOALS</span>
+            </div>
+          </div>
+
+          {/* Target Description */}
+          <div className="card-yellow p-4 mb-6">
+            <p className="text-brutal text-sm">{currentTarget.description}</p>
+          </div>
+
+          {/* Target Metrics Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {/* Carbon Reduction Target */}
+            <div className="card-green text-center p-4">
+              <p className="text-brutal text-xs mb-2">CARBON REDUCTION</p>
+              <p className="heading-brutal text-2xl">{currentTarget.carbonReduction}%</p>
+            </div>
+
+            {/* Sustainability Score Target */}
+            <div className="card-cyan text-center p-4">
+              <p className="text-brutal text-xs mb-2">TARGET SCORE</p>
+              <p className="heading-brutal text-2xl">{currentTarget.sustainabilityScore}/100</p>
+            </div>
+
+            {/* Carbon Saved Target */}
+            <div className="card-teal text-center p-4">
+              <p className="text-brutal text-xs mb-2">TARGET CO₂ SAVED</p>
+              <p className="heading-brutal text-xl">{formatCarbonAmount(currentTarget.carbonSaved)}</p>
+            </div>
+
+            {/* Trip Count Target */}
+            <div className="card-coral text-center p-4">
+              <p className="text-brutal text-xs mb-2">TARGET TRIPS</p>
+              <p className="heading-brutal text-2xl">{currentTarget.tripCount}</p>
+            </div>
+          </div>
+
+          {/* Progress Bars */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Sustainability Score Progress */}
             <div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-brutal">CARBON REDUCTION TARGET</span>
-                <span className="text-brutal">{Math.round(insights.goalProgress.current)}%</span>
+                <span className="text-brutal text-sm">SUSTAINABILITY SCORE</span>
+                <span className="text-brutal text-sm">
+                  {Math.round(metrics.averageSustainabilityScore)}/{currentTarget.sustainabilityScore}
+                </span>
               </div>
               <div className="bg-neo-white border-4 border-neo-black h-6 relative">
-                <div 
-                  className="bg-neo-lime h-full border-r-4 border-neo-black transition-all duration-500"
-                  style={{ width: `${Math.min(insights.goalProgress.percentage, 100)}%` }}
+                <div
+                  className="bg-neo-cyan h-full border-r-4 border-neo-black transition-all duration-500"
+                  style={{
+                    width: `${Math.min((metrics.averageSustainabilityScore / currentTarget.sustainabilityScore) * 100, 100)}%`
+                  }}
                 ></div>
               </div>
-              <div className="flex justify-between text-sm text-brutal mt-2">
-                <span>0%</span>
-                <span>{insights.goalProgress.target}% TARGET</span>
+              <div className="flex justify-between text-xs text-brutal mt-1">
+                <span>0</span>
+                <span>{Math.round((metrics.averageSustainabilityScore / currentTarget.sustainabilityScore) * 100)}%</span>
               </div>
             </div>
-            <div className={`${getSustainabilityScoreColor(insights.goalProgress.percentage)} text-center p-4`}>
-              <p className="text-brutal text-sm mb-2">GOAL COMPLETION</p>
-              <p className="heading-brutal text-3xl">{Math.round(insights.goalProgress.percentage)}%</p>
+
+            {/* Carbon Saved Progress */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-brutal text-sm">CARBON SAVED</span>
+                <span className="text-brutal text-sm">
+                  {formatCarbonAmount(metrics.totalCarbonSaved)}/{formatCarbonAmount(currentTarget.carbonSaved)}
+                </span>
+              </div>
+              <div className="bg-neo-white border-4 border-neo-black h-6 relative">
+                <div
+                  className="bg-neo-lime h-full border-r-4 border-neo-black transition-all duration-500"
+                  style={{
+                    width: `${Math.min((metrics.totalCarbonSaved / currentTarget.carbonSaved) * 100, 100)}%`
+                  }}
+                ></div>
+              </div>
+              <div className="flex justify-between text-xs text-brutal mt-1">
+                <span>0</span>
+                <span>{Math.round((metrics.totalCarbonSaved / currentTarget.carbonSaved) * 100)}%</span>
+              </div>
             </div>
           </div>
         </div>
@@ -291,32 +418,6 @@ export default function SustainabilityDashboard({ className = '' }: Sustainabili
               </div>
             ))}
           </div>
-        </div>
-      </div>
-
-      {/* Simple Trend Chart */}
-      <div className="card-brutal">
-        <h3 className="heading-brutal text-2xl mb-6">SUSTAINABILITY TRENDS</h3>
-        <div className="space-y-4">
-          {trends.slice(-6).map((trend, index) => (
-            <div key={trend.period} className="flex items-center gap-4">
-              <div className="w-24 text-brutal text-sm">{trend.period.split(' ').slice(-1)[0]}</div>
-              <div className="flex-1 flex items-center gap-2">
-                <div className="flex-1 bg-neo-white border-2 border-neo-black h-6 relative">
-                  <div 
-                    className="bg-neo-lime h-full border-r-2 border-neo-black"
-                    style={{ width: `${Math.min(trend.sustainabilityScore, 100)}%` }}
-                  ></div>
-                </div>
-                <div className="w-16 text-brutal text-sm text-right">
-                  {Math.round(trend.sustainabilityScore)}/100
-                </div>
-              </div>
-              <div className="w-20 text-brutal text-xs text-right">
-                {formatCarbonAmount(trend.carbonSaved)} saved
-              </div>
-            </div>
-          ))}
         </div>
       </div>
     </div>

@@ -8,34 +8,34 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Vibrant NeoBrutalism Color Palette (from design)
+        // Earthy NeoBrutalism Color Palette - Lighter & Faded with Light Background
         'neo': {
-          'black': '#000000',
-          'dark-bg': '#2D2D2D',
-          'white': '#FFFFFF',
-          'lime': '#BFFF00',        // Primary vibrant green
-          'teal': '#00BCD4',         // Low carbon category
-          'olive': '#697B42',        // Public transport
-          'forest': '#3D7D5C',       // Alternative green
-          'coral': '#FF6B4A',        // Bike friendly
-          'mustard': '#E5A82D',      // Walkable cities
-          'cyan': '#00E5FF',
-          'red': '#FF3D3D',
-          'blue': '#4A90E2',
-          'orange': '#FF8C42',
-          'purple': '#A855F7',
-          'pink': '#FF85C0',
-          'gray': '#6B7280',
+          'black': '#000000',        // Pure black for borders
+          'dark-bg': '#F5F5F0',      // Faded white/cream background
+          'white': '#FFFFFF',        // White for cards
+          'lime': '#C4D69B',         // Lighter, faded earthy green
+          'teal': '#C4D69B',         // Lighter, faded earthy green
+          'olive': '#C4D69B',        // Lighter, faded earthy green
+          'forest': '#C4D69B',       // Lighter, faded earthy green
+          'coral': '#E89B97',        // Lighter, faded earthy red/coral
+          'mustard': '#FFD966',      // Lighter, faded yellow
+          'cyan': '#C4D69B',         // Lighter, faded earthy green
+          'red': '#E89B97',          // Lighter, faded earthy red
+          'blue': '#C4D69B',         // Lighter, faded earthy green
+          'orange': '#FFD966',       // Lighter, faded yellow
+          'purple': '#C4D69B',       // Lighter, faded earthy green
+          'pink': '#E89B97',         // Lighter, faded earthy red
+          'gray': '#2A2A2A',         // Dark gray text for light background
         },
-        // Vibrant Eco-friendly variants
+        // Earthy Eco-friendly variants
         'eco-brutal': {
-          'primary': '#BFFF00',      // Lime green
-          'secondary': '#E5A82D',     // Mustard
-          'accent': '#00BCD4',        // Teal
-          'dark': '#2D2D2D',
-          'darker': '#1A1A1A',
-          'light': '#FFFFFF',
-          'gray': '#6B7280',
+          'primary': '#C4D69B',      // Lighter earthy green
+          'secondary': '#FFD966',    // Lighter yellow accent
+          'accent': '#FFD966',       // Lighter yellow
+          'dark': '#F5F5F0',         // Faded white background
+          'darker': '#000000',       // Pure black
+          'light': '#FFFFFF',        // White for cards
+          'gray': '#2A2A2A',         // Dark gray text
         }
       },
       fontFamily: {
@@ -43,10 +43,10 @@ module.exports = {
         'sans': ['Inter', 'Arial', 'sans-serif'],
       },
       boxShadow: {
-        'brutal': '8px 8px 0px 0px #000000',
-        'brutal-sm': '4px 4px 0px 0px #000000',
-        'brutal-lg': '12px 12px 0px 0px #000000',
-        'brutal-color': '8px 8px 0px 0px',
+        'brutal': '4px 4px 0px 0px #000000',
+        'brutal-sm': '2px 2px 0px 0px #000000',
+        'brutal-lg': '6px 6px 0px 0px #000000',
+        'brutal-color': '4px 4px 0px 0px',
       },
       borderWidth: {
         '3': '3px',

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { firestoreService } from '@/lib/services/firestoreService'
 import { CompletedTrip, TravelHistoryResponse, EnvironmentalMetrics, TrendData } from '@/lib/types'
+import { getOrCreateUserProfile } from '@/lib/api-helpers'
 
 // Mark this route as dynamic
 export const dynamic = 'force-dynamic'
@@ -9,7 +10,7 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession()
-    
+
     if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -17,14 +18,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get user profile to get userId
-    const userProfile = await firestoreService.getUserProfile(session.user.email)
-    if (!userProfile) {
-      return NextResponse.json(
-        { error: 'User profile not found' },
-        { status: 404 }
-      )
-    }
+    // Get or create user profile
+    const userProfile = await getOrCreateUserProfile(session.user.email, session.user.name)
 
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get('startDate')
@@ -80,7 +75,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession()
-    
+
     if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -88,14 +83,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get user profile to get userId
-    const userProfile = await firestoreService.getUserProfile(session.user.email)
-    if (!userProfile) {
-      return NextResponse.json(
-        { error: 'User profile not found' },
-        { status: 404 }
-      )
-    }
+    // Get or create user profile
+    const userProfile = await getOrCreateUserProfile(session.user.email, session.user.name)
 
     const body = await request.json()
     const { route, carbonFootprint, carbonSaved, completedAt } = body
@@ -118,6 +107,19 @@ export async function POST(request: NextRequest) {
 
     // Save trip to database
     const savedTrip = await firestoreService.saveTrip(userProfile.id, tripData)
+
+    // Regenerate sustainability targets in the background (don't wait for it)
+    // This updates targets based on the new trip data
+    fetch(`${request.nextUrl.origin}/api/user/targets`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': request.headers.get('cookie') || ''
+      }
+    }).catch(error => {
+      console.error('Failed to regenerate targets:', error)
+      // Don't fail the trip save if target regeneration fails
+    })
 
     return NextResponse.json(savedTrip, { status: 201 })
   } catch (error) {

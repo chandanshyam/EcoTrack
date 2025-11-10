@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { firestoreService } from '@/lib/services/firestoreService'
 import { CompletedTrip, TransportMode } from '@/lib/types'
+import { getOrCreateUserProfile } from '@/lib/api-helpers'
 
 // Mark this route as dynamic
 export const dynamic = 'force-dynamic'
@@ -59,14 +60,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get user profile to get userId
-    const userProfile = await firestoreService.getUserProfile(session.user.email)
-    if (!userProfile) {
-      return NextResponse.json(
-        { error: 'User profile not found' },
-        { status: 404 }
-      )
-    }
+    // Get or create user profile
+    const userProfile = await getOrCreateUserProfile(session.user.email, session.user.name)
 
     const { searchParams } = new URL(request.url)
     const limit = searchParams.get('limit')

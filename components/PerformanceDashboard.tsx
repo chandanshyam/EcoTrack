@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { performanceMonitor, PerformanceStats } from '@/lib/utils/performance';
 import { logger, analytics, healthMonitor } from '@/lib/utils/logging';
 
@@ -9,6 +10,7 @@ type PerformanceDashboardProps = {
 }
 
 export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({ className = '' }) => {
+  const { data: session } = useSession();
   const [performanceData, setPerformanceData] = useState<Record<string, PerformanceStats>>({});
   const [logStats, setLogStats] = useState<Record<string, number>>({});
   const [healthStatus, setHealthStatus] = useState<Record<string, any>>({});
@@ -53,6 +55,11 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({ clas
     if (avg < threshold * 2) return 'text-neo-yellow';
     return 'text-neo-red';
   };
+
+  // Only show for admin users
+  if (!session || session.user?.role !== 'admin') {
+    return null;
+  }
 
   if (!isVisible) {
     return (

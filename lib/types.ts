@@ -5,13 +5,34 @@ export enum TransportMode {
   PLANE = 'plane',
 }
 
+export type TransitStop = {
+  name: string;
+  arrivalTime?: string;
+  departureTime?: string;
+}
+
+export type TransitDetails = {
+  line: string; // Transit line name (e.g., "Blue Line", "Route 12")
+  vehicleType: string; // e.g., "BUS", "SUBWAY", "RAIL", "TRAIN"
+  departureStop: TransitStop;
+  arrivalStop: TransitStop;
+  numStops: number; // Number of stops between departure and arrival
+  agencyName?: string; // Transit agency name
+  fare?: {
+    value: number; // Fare amount
+    currency: string; // Currency code (e.g., "USD")
+    text: string; // Formatted fare text (e.g., "$2.75")
+  };
+}
+
 export type TransportSegment = {
   mode: TransportMode;
   duration: number; // minutes
-  distance: number; // kilometers
+  distance: number; // miles
   carbonEmission: number; // kg CO2e
   cost: number;
   provider?: string;
+  transitDetails?: TransitDetails; // Only populated for transit modes (train, bus)
 }
 
 export type RouteOption = {
@@ -21,7 +42,7 @@ export type RouteOption = {
   destination: Location;
   transportModes: TransportSegment[];
   totalDuration: number; // minutes
-  totalDistance: number; // kilometers
+  totalDistance: number; // miles
   totalCost: number;
   totalCarbonFootprint: number; // kg CO2e
   sustainabilityScore: number; // 0-100
