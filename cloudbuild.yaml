@@ -1,0 +1,95 @@
+# Google Cloud Build configuration for EcoTrack
+# Automates building and deploying to Cloud Run
+
+steps:
+  # Step 1: Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/ecotrack:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/ecotrack:latest'
+      - '-f'
+      - 'Dockerfile'
+      - '.'
+    id: 'build-image'
+
+  # Step 2: Push the Docker image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/ecotrack:$COMMIT_SHA'
+    id: 'push-image'
+    waitFor: ['build-image']
+
+  # Step 3: Push the latest tag
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/ecotrack:latest'
+    id: 'push-latest'
+    waitFor: ['build-image']
+
+  # Step 4: Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'ecotrack'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/ecotrack:$COMMIT_SHA'
+      - '--region'
+      - '${_CLOUD_RUN_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '${_MEMORY}'
+      - '--cpu'
+      - '${_CPU}'
+      - '--min-instances'
+      - '${_MIN_INSTANCES}'
+      - '--max-instances'
+      - '${_MAX_INSTANCES}'
+      - '--timeout'
+      - '${_TIMEOUT}'
+      - '--concurrency'
+      - '${_CONCURRENCY}'
+      - '--port'
+      - '3000'
+      - '--set-env-vars'
+      - 'NODE_ENV=production,NEXT_TELEMETRY_DISABLED=1'
+      - '--set-secrets'
+      - 'GOOGLE_MAPS_API_KEY=GOOGLE_MAPS_API_KEY:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest,NEXTAUTH_SECRET=NEXTAUTH_SECRET:latest,GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID:latest,GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET:latest,FIREBASE_PROJECT_ID=FIREBASE_PROJECT_ID:latest,FIREBASE_PRIVATE_KEY=FIREBASE_PRIVATE_KEY:latest,FIREBASE_CLIENT_EMAIL=FIREBASE_CLIENT_EMAIL:latest'
+      - '--labels'
+      - 'app=ecotrack,managed-by=cloud-build'
+      - '--service-account'
+      - '${_SERVICE_ACCOUNT}'
+    id: 'deploy-cloud-run'
+    waitFor: ['push-image']
+
+# Substitution variables with defaults
+substitutions:
+  _CLOUD_RUN_REGION: 'us-central1'
+  _MEMORY: '1Gi'
+  _CPU: '1'
+  _MIN_INSTANCES: '0'
+  _MAX_INSTANCES: '10'
+  _TIMEOUT: '300s'
+  _CONCURRENCY: '80'
+  _SERVICE_ACCOUNT: 'ecotrack-cloud-run@${PROJECT_ID}.iam.gserviceaccount.com'
+
+# Build configuration
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+
+# Build timeout
+timeout: '1200s'
+
+# Images to store in Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/ecotrack:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/ecotrack:latest'
