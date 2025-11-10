@@ -37,17 +37,17 @@ export async function GET() {
 
         if (segment.transitDetails) {
           const td = segment.transitDetails;
-          console.log(`  Line: ${td.lineName} (${td.lineShortName || 'N/A'})`);
-          console.log(`  Color: ${td.lineColor || 'N/A'}`);
+          console.log(`  Line: ${td.line}`);
+          console.log(`  Vehicle Type: ${td.vehicleType}`);
           console.log(`  Agency: ${td.agencyName || 'N/A'}`);
           console.log(`  From: ${td.departureStop.name}`);
           console.log(`  To: ${td.arrivalStop.name}`);
-          console.log(`  Depart: ${td.departureTimeText || 'N/A'}`);
-          console.log(`  Arrive: ${td.arrivalTimeText || 'N/A'}`);
+          console.log(`  Depart: ${td.departureStop.departureTime || 'N/A'}`);
+          console.log(`  Arrive: ${td.arrivalStop.arrivalTime || 'N/A'}`);
           console.log(`  Stops: ${td.numStops}`);
-          console.log(`  Headsign: ${td.headsign || 'N/A'}`);
-        } else if (segment.instructions) {
-          console.log(`  Instructions: ${segment.instructions.substring(0, 100)}`);
+          if (td.fare) {
+            console.log(`  Fare: ${td.fare.text}`);
+          }
         }
       });
     });
@@ -66,12 +66,13 @@ export async function GET() {
           mode: seg.mode,
           distance: seg.distance,
           hasTransitDetails: !!seg.transitDetails,
-          lineName: seg.transitDetails?.lineName,
-          lineColor: seg.transitDetails?.lineColor,
+          line: seg.transitDetails?.line,
+          vehicleType: seg.transitDetails?.vehicleType,
           departureStop: seg.transitDetails?.departureStop.name,
           arrivalStop: seg.transitDetails?.arrivalStop.name,
-          departureTime: seg.transitDetails?.departureTimeText,
-          arrivalTime: seg.transitDetails?.arrivalTimeText,
+          departureTime: seg.transitDetails?.departureStop.departureTime,
+          arrivalTime: seg.transitDetails?.arrivalStop.arrivalTime,
+          fare: seg.transitDetails?.fare?.text,
         })),
       })),
     });

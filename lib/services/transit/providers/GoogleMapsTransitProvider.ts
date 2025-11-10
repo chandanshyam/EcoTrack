@@ -41,7 +41,6 @@ export class GoogleMapsTransitProvider implements ITransitProvider {
           carbonEmission: segment.carbonEmission,
           cost: segment.cost,
           transitDetails: segment.transitDetails,
-          instructions: segment.instructions,
         })),
         totalDuration: route.totalDuration,
         totalDistance: route.totalDistance,
