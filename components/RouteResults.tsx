@@ -4,6 +4,7 @@ import { RouteOption, SustainabilityAnalysis, TransportMode } from '@/lib/types'
 import { ResultsTabs } from '@/components/ResultsTabs';
 import { FilterControls, FilterOptions, SortOption } from '@/components/FilterControls';
 import { ToastContainer, ToastType } from '@/components/Toast';
+import { CARBON_EMISSION_FACTORS } from '@/lib/services/carbonCalculationService';
 
 type RouteResultsProps = {
   routes: RouteOption[];
@@ -64,9 +65,11 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
     setSavingRouteId(route.id);
 
     try {
-      // Calculate carbon saved compared to car
-      const carEmissionFactor = 0.2; // kg CO2 per km for average car
+      // Calculate carbon saved compared to conventional car travel
+      // Use the correct emission factor: kg CO2e per MILE (not per km)
+      const carEmissionFactor = CARBON_EMISSION_FACTORS.car.base; // 0.338 kg CO2e per mile
       const carFootprint = route.totalDistance * carEmissionFactor;
+      // Only track positive savings (if route is worse than car, count as 0 saved)
       const carbonSaved = Math.max(0, carFootprint - route.totalCarbonFootprint);
 
       const response = await fetch('/api/user/history', {
@@ -87,7 +90,10 @@ export const RouteResults: React.FC<RouteResultsProps> = ({
         throw new Error(errorData.error || 'Failed to save trip');
       }
 
-      addToast('Trip saved successfully! Check your history.', 'success');
+      addToast('Trip saved successfully!', 'success');
+
+      // Dispatch event to refresh dashboard
+      window.dispatchEvent(new CustomEvent('tripSaved'));
     } catch (error) {
       console.error('Error saving trip:', error);
       addToast(

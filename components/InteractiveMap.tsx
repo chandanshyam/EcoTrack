@@ -29,11 +29,12 @@ interface RoutePolyline {
   routeId: string;
 }
 
+// Google Maps-style colors for transport modes
 const TRANSPORT_MODE_COLORS: Record<TransportMode, string> = {
-  [TransportMode.CAR]: '#b59595', // dull red
-  [TransportMode.TRAIN]: '#a5b5a5', // dull green
-  [TransportMode.BUS]: '#d4b896', // dull amber
-  [TransportMode.PLANE]: '#a595b5', // dull violet
+  [TransportMode.CAR]: '#5B8FF9', // Blue like Google Maps driving
+  [TransportMode.TRAIN]: '#1E90FF', // Dodger blue for train
+  [TransportMode.BUS]: '#FF6B6B', // Coral red for bus
+  [TransportMode.PLANE]: '#9B59B6', // Purple for plane
 };
 
 const TRANSPORT_MODE_ICONS: Record<TransportMode, string> = {
@@ -155,8 +156,13 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
   // Initialize Google Maps
   const initializeMap = useCallback(async () => {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
-    if (!mapRef.current || !apiKey) {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!mapRef.current) {
+      return;
+    }
+
+    if (!apiKey) {
+      console.error('Google Maps API key not found. Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in your .env file');
       setError('Google Maps API key is required');
       setIsLoading(false);
       return;
@@ -260,130 +266,134 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
     routes.forEach((route) => {
       const isSelected = selectedRouteId === route.id;
-      const opacity = selectedRouteId && !isSelected ? 0.3 : 1.0;
+      // Only show polyline when this route is selected
+      const shouldShowPolyline = selectedRouteId === route.id;
       const zIndex = isSelected ? 1000 : 100 + routeIndex;
 
-      // Create origin marker with AdvancedMarkerElement
-      const originPin = new google.maps.marker.PinElement({
-        background: '#a5b5a5',
-        borderColor: '#2a2a2a',
-        glyphColor: '#2a2a2a',
-        scale: 1.0,
-      });
+      // Only show markers when this route is selected
+      const shouldShowMarkers = isSelected;
 
-      // Apply opacity to marker if not selected
-      if (opacity < 1.0 && originPin.element) {
-        (originPin.element as HTMLElement).style.opacity = opacity.toString();
-      }
-
-      const originMarker = new google.maps.marker.AdvancedMarkerElement({
-        position: route.origin.coordinates,
-        map: mapInstanceRef.current,
-        title: `${route.name} - Origin`,
-        content: originPin.element,
-        zIndex: zIndex + 10,
-      });
-
-      // Create destination marker with AdvancedMarkerElement
-      const destinationPin = new google.maps.marker.PinElement({
-        background: '#b59595',
-        borderColor: '#2a2a2a',
-        glyphColor: '#2a2a2a',
-        scale: 1.0,
-      });
-
-      // Apply opacity to marker if not selected
-      if (opacity < 1.0 && destinationPin.element) {
-        (destinationPin.element as HTMLElement).style.opacity = opacity.toString();
-      }
-
-      const destinationMarker = new google.maps.marker.AdvancedMarkerElement({
-        position: route.destination.coordinates,
-        map: mapInstanceRef.current,
-        title: `${route.name} - Destination`,
-        content: destinationPin.element,
-        zIndex: zIndex + 10,
-      });
-
-      // Create info windows
-      const originInfoWindow = new google.maps.InfoWindow({
-        content: `
-          <div style="font-family: 'Courier New', monospace; padding: 8px;">
-            <div style="font-weight: bold; text-transform: uppercase;">Origin</div>
-            <div>${route.origin.address}</div>
-          </div>
-        `
-      });
-
-      const destinationInfoWindow = new google.maps.InfoWindow({
-        content: createSustainabilityInfoContent(route)
-      });
-
-      // Add click listeners
-      originMarker.addListener('click', () => {
-        originInfoWindow.open(mapInstanceRef.current, originMarker);
-      });
-
-      destinationMarker.addListener('click', () => {
-        destinationInfoWindow.open(mapInstanceRef.current, destinationMarker);
-      });
-
-      // Store markers
-      markersRef.current.push(
-        { marker: originMarker, infoWindow: originInfoWindow },
-        { marker: destinationMarker, infoWindow: destinationInfoWindow }
-      );
-
-      // Create route polyline - use actual path from Google Maps if available
-      const color = TRANSPORT_MODE_COLORS[route.transportModes[0]?.mode] || '#666666';
-
-      // Decode polyline if available, otherwise use straight line
-      let path: google.maps.LatLngLiteral[];
-      if (route.polyline) {
-        try {
-          path = decodePolyline(route.polyline);
-          console.log(`Decoded polyline for ${route.name}: ${path.length} points`);
-        } catch (error) {
-          console.warn('Failed to decode polyline, using straight line:', error);
-          path = [route.origin.coordinates, route.destination.coordinates];
-        }
-      } else {
-        // Fallback to straight line if no polyline data
-        path = [route.origin.coordinates, route.destination.coordinates];
-      }
-
-      const polyline = new google.maps.Polyline({
-        path: path,
-        geodesic: true,
-        strokeColor: color,
-        strokeOpacity: opacity,
-        strokeWeight: isSelected ? 6 : 4,
-        zIndex: zIndex,
-      });
-
-      polyline.setMap(mapInstanceRef.current);
-
-      // Add click listener to polyline
-      polyline.addListener('click', (event: google.maps.MapMouseEvent) => {
-        if (onRouteSelect) {
-          onRouteSelect(route.id);
-        }
-
-        // Show route info at click position
-        const infoWindow = new google.maps.InfoWindow({
-          content: createSustainabilityInfoContent(route),
-          position: event.latLng,
+      if (shouldShowMarkers) {
+        // Create origin marker with AdvancedMarkerElement
+        const originPin = new google.maps.marker.PinElement({
+          background: '#34A853', // Google green
+          borderColor: '#FFFFFF',
+          glyphColor: '#FFFFFF',
+          scale: isSelected ? 1.2 : 1.0,
         });
 
-        infoWindow.open(mapInstanceRef.current);
-      });
+        const originMarker = new google.maps.marker.AdvancedMarkerElement({
+          position: route.origin.coordinates,
+          map: mapInstanceRef.current,
+          title: `${route.name} - Origin`,
+          content: originPin.element,
+          zIndex: zIndex + 10,
+        });
 
-      polylinesRef.current.push({ polyline, routeId: route.id });
+        // Create destination marker with AdvancedMarkerElement
+        const destinationPin = new google.maps.marker.PinElement({
+          background: '#EA4335', // Google red
+          borderColor: '#FFFFFF',
+          glyphColor: '#FFFFFF',
+          scale: isSelected ? 1.2 : 1.0,
+        });
 
-      // Extend bounds to include all points in the path
-      path.forEach(point => {
-        bounds.extend(point);
-      });
+        const destinationMarker = new google.maps.marker.AdvancedMarkerElement({
+          position: route.destination.coordinates,
+          map: mapInstanceRef.current,
+          title: `${route.name} - Destination`,
+          content: destinationPin.element,
+          zIndex: zIndex + 10,
+        });
+
+        // Create info windows
+        const originInfoWindow = new google.maps.InfoWindow({
+          content: `
+            <div style="font-family: 'Courier New', monospace; padding: 8px;">
+              <div style="font-weight: bold; text-transform: uppercase;">Origin</div>
+              <div>${route.origin.address}</div>
+            </div>
+          `
+        });
+
+        const destinationInfoWindow = new google.maps.InfoWindow({
+          content: createSustainabilityInfoContent(route)
+        });
+
+        // Add click listeners
+        originMarker.addListener('click', () => {
+          originInfoWindow.open(mapInstanceRef.current, originMarker);
+        });
+
+        destinationMarker.addListener('click', () => {
+          destinationInfoWindow.open(mapInstanceRef.current, destinationMarker);
+        });
+
+        // Store markers
+        markersRef.current.push(
+          { marker: originMarker, infoWindow: originInfoWindow },
+          { marker: destinationMarker, infoWindow: destinationInfoWindow }
+        );
+      }
+
+      // Only show polyline when no route is selected, or this route is selected
+      if (shouldShowPolyline) {
+        // Create route polyline - use actual path from Google Maps if available
+        const color = TRANSPORT_MODE_COLORS[route.transportModes[0]?.mode] || '#5B8FF9';
+
+        // Decode polyline if available, otherwise use straight line
+        let path: google.maps.LatLngLiteral[];
+        if (route.polyline) {
+          try {
+            path = decodePolyline(route.polyline);
+            console.log(`Decoded polyline for ${route.name}: ${path.length} points`);
+          } catch (error) {
+            console.warn('Failed to decode polyline, using straight line:', error);
+            path = [route.origin.coordinates, route.destination.coordinates];
+          }
+        } else {
+          // Fallback to straight line if no polyline data
+          console.warn(`No polyline data for ${route.name}`);
+          path = [route.origin.coordinates, route.destination.coordinates];
+        }
+
+        const polyline = new google.maps.Polyline({
+          path: path,
+          geodesic: true,
+          strokeColor: color,
+          strokeOpacity: 0.8,
+          strokeWeight: isSelected ? 5 : 4,
+          zIndex: zIndex,
+        });
+
+        polyline.setMap(mapInstanceRef.current);
+
+        // Add click listener to polyline
+        polyline.addListener('click', (event: google.maps.MapMouseEvent) => {
+          if (onRouteSelect) {
+            onRouteSelect(route.id);
+          }
+
+          // Show route info at click position
+          const infoWindow = new google.maps.InfoWindow({
+            content: createSustainabilityInfoContent(route),
+            position: event.latLng,
+          });
+
+          infoWindow.open(mapInstanceRef.current);
+        });
+
+        polylinesRef.current.push({ polyline, routeId: route.id });
+
+        // Extend bounds to include all points in the path
+        path.forEach(point => {
+          bounds.extend(point);
+        });
+      } else {
+        // Still extend bounds even if polyline is hidden
+        bounds.extend(route.origin.coordinates);
+        bounds.extend(route.destination.coordinates);
+      }
 
       routeIndex++;
     });
@@ -419,9 +429,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   if (error) {
     return (
       <div className={`card-brutal ${className}`}>
-        <div className="status-error text-center p-8">
-          <h3 className="text-2xl mb-4">MAP ERROR!</h3>
-          <p className="text-lg">{error}</p>
+        <div className="bg-neo-coral text-center p-4">
+          <p className="text-brutal text-xs">Map unavailable</p>
         </div>
       </div>
     );
@@ -456,8 +465,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
 
         <div
           ref={mapRef}
-          className={`w-full border-3 border-neo-black ${showHeader ? 'h-96 md:h-[500px]' : 'h-full'}`}
-          style={{ minHeight: showHeader ? '400px' : '100%' }}
+          className={`w-full border-3 border-neo-black ${showHeader ? 'h-96 md:h-[500px]' : 'h-[400px] md:h-[500px]'}`}
+          style={{ minHeight: '400px' }}
         />
       </div>
     </div>

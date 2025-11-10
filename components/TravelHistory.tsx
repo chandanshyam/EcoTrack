@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { CompletedTrip, TransportMode } from '@/lib/types'
+import { ToastContainer, ToastType } from '@/components/Toast'
 
 interface TravelHistoryProps {
   className?: string
@@ -22,6 +23,9 @@ export default function TravelHistory({ className = '' }: TravelHistoryProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedTrip, setSelectedTrip] = useState<CompletedTrip | null>(null)
+  const [deletingTripId, setDeletingTripId] = useState<string | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: ToastType }>>([])
   const [filters, setFilters] = useState<FilterOptions>({
     sortBy: 'date',
     sortOrder: 'desc',
@@ -39,16 +43,25 @@ export default function TravelHistory({ className = '' }: TravelHistoryProps) {
     applyFilters()
   }, [trips, filters]) // applyFilters is stable since it doesn't depend on changing values
 
+  const addToast = (message: string, type: ToastType) => {
+    const id = Date.now().toString()
+    setToasts(prev => [...prev, { id, message, type }])
+  }
+
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id))
+  }
+
   const fetchTravelHistory = async () => {
     try {
       setLoading(true)
       setError(null)
-      
+
       const response = await fetch('/api/user/history')
       if (!response.ok) {
         throw new Error('Failed to fetch travel history')
       }
-      
+
       const data = await response.json()
       setTrips(data.trips || [])
     } catch (err) {
@@ -56,6 +69,37 @@ export default function TravelHistory({ className = '' }: TravelHistoryProps) {
       console.error('Travel history fetch error:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDeleteTrip = async (tripId: string) => {
+    setDeletingTripId(tripId)
+    setConfirmDeleteId(null)
+
+    try {
+      const response = await fetch(`/api/user/history/${tripId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete trip')
+      }
+
+      // Remove trip from local state
+      setTrips(prev => prev.filter(trip => trip.id !== tripId))
+      addToast('Trip deleted successfully!', 'success')
+
+      // Dispatch event to refresh dashboard
+      window.dispatchEvent(new CustomEvent('tripSaved'))
+    } catch (error) {
+      console.error('Error deleting trip:', error)
+      addToast(
+        error instanceof Error ? error.message : 'Failed to delete trip. Please try again.',
+        'error'
+      )
+    } finally {
+      setDeletingTripId(null)
     }
   }
 
@@ -374,17 +418,41 @@ export default function TravelHistory({ className = '' }: TravelHistoryProps) {
                 <div className="flex flex-col gap-2">
                   <button
                     onClick={() => setSelectedTrip(selectedTrip?.id === trip.id ? null : trip)}
-                    className="btn-brutal bg-neo-cyan px-4 py-2 text-sm"
+                    className="btn-brutal bg-neo-cyan px-4 py-2 text-sm hover:translate-x-1 hover:translate-y-1 transition-transform"
                   >
                     {selectedTrip?.id === trip.id ? 'HIDE DETAILS' : 'VIEW DETAILS'}
                   </button>
-                  <button
-                    onClick={() => compareTrips(trip, trip)} // In real implementation, this would open comparison modal
-                    className="btn-brutal bg-neo-mustard px-4 py-2 text-sm"
-                    disabled
-                  >
-                    COMPARE
-                  </button>
+                  {confirmDeleteId === trip.id ? (
+                    <div className="flex flex-col gap-2">
+                      <div className="card-coral px-3 py-2">
+                        <p className="text-brutal text-xs text-center mb-2">DELETE THIS TRIP?</p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleDeleteTrip(trip.id)}
+                            disabled={deletingTripId === trip.id}
+                            className="btn-brutal bg-neo-coral px-3 py-1 text-xs flex-1 hover:translate-x-1 hover:translate-y-1 transition-transform disabled:opacity-50"
+                          >
+                            {deletingTripId === trip.id ? 'DELETING...' : 'YES'}
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            disabled={deletingTripId === trip.id}
+                            className="btn-brutal bg-neo-white px-3 py-1 text-xs flex-1 hover:translate-x-1 hover:translate-y-1 transition-transform"
+                          >
+                            NO
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDeleteId(trip.id)}
+                      disabled={deletingTripId !== null}
+                      className="btn-brutal bg-neo-coral px-4 py-2 text-sm hover:translate-x-1 hover:translate-y-1 transition-transform disabled:opacity-50"
+                    >
+                      DELETE
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -456,6 +524,9 @@ export default function TravelHistory({ className = '' }: TravelHistoryProps) {
           ))}
         </div>
       )}
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   )
 }

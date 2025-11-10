@@ -3,10 +3,9 @@
 import React, { useState } from 'react';
 import { RouteOption, SustainabilityAnalysis } from '@/lib/types';
 import { RouteCard } from '@/components/RouteCard';
-import { InteractiveMap } from '@/components/InteractiveMap';
 import { FilterControls, FilterOptions } from '@/components/FilterControls';
 
-type TabType = 'routes' | 'insights' | 'map';
+type TabType = 'routes' | 'insights';
 
 interface ResultsTabsProps {
   routes: RouteOption[];
@@ -57,12 +56,6 @@ export const ResultsTabs: React.FC<ResultsTabsProps> = ({
         >
           🤖 AI INSIGHTS
         </button>
-        <button
-          className={`tab tab-map ${activeTab === 'map' ? 'active' : ''}`}
-          onClick={() => setActiveTab('map')}
-        >
-          🗺️ MAP VIEW
-        </button>
       </div>
 
       {/* Tab Content */}
@@ -94,6 +87,7 @@ export const ResultsTabs: React.FC<ResultsTabsProps> = ({
               </div>
             )}
 
+            {/* Route Cards */}
             <div className="space-y-6">
               {routes.map((route, index) => (
                 <RouteCard
@@ -228,51 +222,6 @@ export const ResultsTabs: React.FC<ResultsTabsProps> = ({
             )}
           </div>
         )}
-
-        {/* Map Tab */}
-        {activeTab === 'map' && (
-          <div className="fade-in">
-            <div className="mb-4">
-              <div className="card-teal inline-block px-4 py-2">
-                <p className="text-brutal">INTERACTIVE ROUTE MAP</p>
-              </div>
-            </div>
-            <InteractiveMap
-              routes={routes}
-              selectedRouteId={selectedRouteId}
-              onRouteSelect={onRouteSelect}
-              className="w-full h-[600px]"
-              showHeader={false}
-            />
-
-            {/* Route Legend */}
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {routes.map((route, index) => (
-                <button
-                  key={route.id}
-                  onClick={() => onRouteSelect(route.id)}
-                  className={`card-brutal text-left hover:translate-x-1 hover:translate-y-1 transition-all p-3 ${
-                    selectedRouteId === route.id ? 'ring-4 ring-neo-blue' : ''
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-brutal font-bold text-xs">
-                      ROUTE {index + 1}
-                    </span>
-                    <span className={`score-badge text-xs ${
-                      route.sustainabilityScore > 80 ? 'score-high' :
-                      route.sustainabilityScore > 60 ? 'score-medium' : 'score-low'
-                    }`}>
-                      {route.sustainabilityScore}
-                    </span>
-                  </div>
-                  <p className="text-brutal text-xs">{route.name.toUpperCase()}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
       </div>
     </div>
   );

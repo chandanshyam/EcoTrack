@@ -35,48 +35,49 @@ import { TransportMode, TransportSegment, RouteOption, ComparisonData } from '..
  * - For carpooling, divide by actual passenger count
  */
 
-// Enhanced carbon emission factors database (kg CO2e per km)
+// Enhanced carbon emission factors database (kg CO2e per mile)
 // All factors are PER PASSENGER unless otherwise noted
+// Converted from per km by multiplying by 1.60934
 export const CARBON_EMISSION_FACTORS = {
   [TransportMode.CAR]: {
     // Per vehicle (divide by passenger count for per-passenger)
-    base: 0.21, // Average car
+    base: 0.338, // Average car (0.21 kg/km * 1.60934)
     variants: {
-      petrol: 0.24,
-      diesel: 0.27,
-      hybrid: 0.12,
-      electric: 0.05,
+      petrol: 0.386,  // 0.24 * 1.60934
+      diesel: 0.435,  // 0.27 * 1.60934
+      hybrid: 0.193,  // 0.12 * 1.60934
+      electric: 0.080, // 0.05 * 1.60934
     }
   },
   [TransportMode.TRAIN]: {
     // Per passenger (calculated from total train emissions / average passengers)
-    base: 0.041,
+    base: 0.066, // 0.041 kg/km * 1.60934
     variants: {
-      highSpeed: 0.028,
-      regional: 0.048,
-      intercity: 0.035,
+      highSpeed: 0.045,  // 0.028 * 1.60934
+      regional: 0.077,   // 0.048 * 1.60934
+      intercity: 0.056,  // 0.035 * 1.60934
     }
   },
   [TransportMode.BUS]: {
     // Per passenger (calculated from total bus emissions / average passengers)
-    base: 0.089,
+    base: 0.143, // 0.089 kg/km * 1.60934
     variants: {
-      city: 0.105,
-      intercity: 0.078,
-      electric: 0.032,
+      city: 0.169,      // 0.105 * 1.60934
+      intercity: 0.126, // 0.078 * 1.60934
+      electric: 0.052,  // 0.032 * 1.60934
     }
   },
   [TransportMode.PLANE]: {
     // Per-passenger emissions accounting for average aircraft load factor (82%)
     // These factors include takeoff, landing, and cruising emissions divided by passenger count
     // Note: Business/First class passengers have 2-3x higher footprint due to space usage
-    base: 0.255, // Average per passenger (economy class)
+    base: 0.410, // Average per passenger (economy class) - 0.255 kg/km * 1.60934
     variants: {
-      domestic: 0.285,      // Short flights: Higher per-km emissions due to takeoff/landing
-      shortHaul: 0.255,     // <1500km: Standard per-passenger economy
-      longHaul: 0.195,      // >1500km: More efficient per-km, economy class
-      businessClass: 0.510, // 2x economy due to space (fewer seats per aircraft)
-      firstClass: 0.765,    // 3x economy due to space
+      domestic: 0.459,      // Short flights: Higher per-mile emissions due to takeoff/landing (0.285 * 1.60934)
+      shortHaul: 0.410,     // <932 miles: Standard per-passenger economy (0.255 * 1.60934)
+      longHaul: 0.314,      // >932 miles: More efficient per-mile, economy class (0.195 * 1.60934)
+      businessClass: 0.821, // 2x economy due to space (0.510 * 1.60934)
+      firstClass: 1.231,    // 3x economy due to space (0.765 * 1.60934)
     }
   }
 } as const;
@@ -91,7 +92,7 @@ const SUSTAINABILITY_WEIGHTS = {
 
 // Reference values for conventional travel (car-based)
 const CONVENTIONAL_TRAVEL_REFERENCE = {
-  carbonPerKm: CARBON_EMISSION_FACTORS[TransportMode.CAR].base,
+  carbonPerMile: CARBON_EMISSION_FACTORS[TransportMode.CAR].base,
   method: 'Private Car (Petrol)'
 } as const;
 
@@ -135,11 +136,11 @@ export class CarbonCalculationService {
     segments: TransportSegment[]
   ): number {
     // Calculate carbon efficiency (lower is better)
-    const carbonPerKm = totalDistance > 0 ? carbonFootprint / totalDistance : 0;
-    const conventionalCarbon = totalDistance * CONVENTIONAL_TRAVEL_REFERENCE.carbonPerKm;
+    const carbonPerMile = totalDistance > 0 ? carbonFootprint / totalDistance : 0;
+    const conventionalCarbon = totalDistance * CONVENTIONAL_TRAVEL_REFERENCE.carbonPerMile;
     
     // Carbon score: 100 for zero emissions, decreasing as emissions increase
-    const carbonScore = Math.max(0, 100 - (carbonPerKm / CONVENTIONAL_TRAVEL_REFERENCE.carbonPerKm) * 100);
+    const carbonScore = Math.max(0, 100 - (carbonPerMile / CONVENTIONAL_TRAVEL_REFERENCE.carbonPerMile) * 100);
     
     // Efficiency bonus for public transport and active modes
     const efficiencyScore = this.calculateEfficiencyScore(segments);
@@ -239,7 +240,7 @@ export class CarbonCalculationService {
   static compareWithConventionalTravel(
     route: RouteOption
   ): ComparisonData {
-    const conventionalFootprint = route.totalDistance * CONVENTIONAL_TRAVEL_REFERENCE.carbonPerKm;
+    const conventionalFootprint = route.totalDistance * CONVENTIONAL_TRAVEL_REFERENCE.carbonPerMile;
     const actualFootprint = route.totalCarbonFootprint;
     const savings = conventionalFootprint - actualFootprint;
     const savingsPercentage = conventionalFootprint > 0 
@@ -297,7 +298,8 @@ export class CarbonCalculationService {
         totalDistance: route.totalDistance || 0,
         totalCost: route.totalCost || 0,
         totalCarbonFootprint,
-        sustainabilityScore
+        sustainabilityScore,
+        polyline: route.polyline // Preserve polyline for map display
       };
     });
   }
@@ -312,14 +314,14 @@ export class CarbonCalculationService {
       throw new Error(`Unknown transport mode: ${mode}`);
     }
 
-    // Auto-select flight variant based on distance if not specified
+    // Auto-select flight variant based on distance if not specified (distance in miles)
     if (mode === TransportMode.PLANE && !variant && distance) {
-      if (distance < 500) {
-        variant = 'domestic'; // Short domestic flights
-      } else if (distance < 1500) {
-        variant = 'shortHaul'; // Regional flights
+      if (distance < 311) {
+        variant = 'domestic'; // Short domestic flights (<500 km)
+      } else if (distance < 932) {
+        variant = 'shortHaul'; // Regional flights (<1500 km)
       } else {
-        variant = 'longHaul'; // Intercontinental flights
+        variant = 'longHaul'; // Intercontinental flights (>1500 km)
       }
     }
 

@@ -1,0 +1,67 @@
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+.next
+out
+build
+dist
+
+# Testing
+coverage
+__tests__
+*.test.ts
+*.test.tsx
+*.test.js
+*.spec.ts
+*.spec.tsx
+*.spec.js
+jest.config.js
+jest.setup.js
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env*.local
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+CLAUDE.md
+NEOBRUTALISM_GUIDE.md
+*.md
+docs
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Deployment
+.vercel
+.firebase
+firebase.json
+firestore.indexes.json
+
+# Logs
+*.log
+logs
+
+# Misc
+.editorconfig
+.prettierrc
+.eslintrc.json
+.eslintignore

@@ -570,6 +570,87 @@ class FirestoreService {
       console.error('Error cleaning up expired cache:', error);
     }
   }
+
+  /**
+   * Sustainability Targets management
+   */
+  async getUserTargets(userId: string): Promise<{
+    monthly: {
+      carbonReduction: number;
+      sustainabilityScore: number;
+      carbonSaved: number;
+      tripCount: number;
+      description: string;
+    };
+    yearly: {
+      carbonReduction: number;
+      sustainabilityScore: number;
+      carbonSaved: number;
+      tripCount: number;
+      description: string;
+    };
+    generatedAt: Date;
+    currentMonth: string;
+    currentYear: string;
+  } | null> {
+    try {
+      const targetDoc = await this.db.collection('userTargets').doc(userId).get();
+
+      if (!targetDoc.exists) {
+        return null;
+      }
+
+      const data = targetDoc.data()!;
+      return {
+        monthly: data.monthly,
+        yearly: data.yearly,
+        generatedAt: data.generatedAt?.toDate() || new Date(),
+        currentMonth: data.currentMonth,
+        currentYear: data.currentYear,
+      };
+    } catch (error) {
+      console.error('Error getting user targets:', error);
+      return null;
+    }
+  }
+
+  async saveUserTargets(
+    userId: string,
+    targets: {
+      monthly: {
+        carbonReduction: number;
+        sustainabilityScore: number;
+        carbonSaved: number;
+        tripCount: number;
+        description: string;
+      };
+      yearly: {
+        carbonReduction: number;
+        sustainabilityScore: number;
+        carbonSaved: number;
+        tripCount: number;
+        description: string;
+      };
+    }
+  ): Promise<void> {
+    try {
+      const now = new Date();
+      const currentMonth = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+      const currentYear = now.getFullYear().toString();
+
+      await this.db.collection('userTargets').doc(userId).set({
+        monthly: targets.monthly,
+        yearly: targets.yearly,
+        generatedAt: now,
+        currentMonth,
+        currentYear,
+        updatedAt: now,
+      });
+    } catch (error) {
+      console.error('Error saving user targets:', error);
+      throw new Error('Failed to save user targets');
+    }
+  }
 }
 
 // Export singleton instance

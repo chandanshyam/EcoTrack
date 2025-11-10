@@ -5,57 +5,34 @@ export enum TransportMode {
   PLANE = 'plane',
 }
 
+export type TransitStop = {
+  name: string;
+  arrivalTime?: string;
+  departureTime?: string;
+}
+
 export type TransitDetails = {
-  // Line information
-  lineName: string;
-  lineShortName?: string;
-  lineColor?: string;
-  lineTextColor?: string;
-
-  // Agency information
-  agencyName?: string;
-  agencyUrl?: string;
-  agencyPhone?: string;
-
-  // Stop information
-  departureStop: {
-    name: string;
-    location?: { lat: number; lng: number };
+  line: string; // Transit line name (e.g., "Blue Line", "Route 12")
+  vehicleType: string; // e.g., "BUS", "SUBWAY", "RAIL", "TRAIN"
+  departureStop: TransitStop;
+  arrivalStop: TransitStop;
+  numStops: number; // Number of stops between departure and arrival
+  agencyName?: string; // Transit agency name
+  fare?: {
+    value: number; // Fare amount
+    currency: string; // Currency code (e.g., "USD")
+    text: string; // Formatted fare text (e.g., "$2.75")
   };
-  arrivalStop: {
-    name: string;
-    location?: { lat: number; lng: number };
-  };
-
-  // Timing information
-  departureTime?: Date;
-  arrivalTime?: Date;
-  departureTimeText?: string;
-  arrivalTimeText?: string;
-
-  // Trip information
-  headsign?: string;  // e.g., "Downtown via Broadway"
-  numStops: number;
-  vehicleType: string;  // BUS, SUBWAY, TRAIN, TRAM, etc.
-  vehicleIcon?: string;
-
-  // Real-time information (if available)
-  headway?: number;  // Time between departures in seconds
 }
 
 export type TransportSegment = {
   mode: TransportMode;
   duration: number; // minutes
-  distance: number; // kilometers
+  distance: number; // miles
   carbonEmission: number; // kg CO2e
   cost: number;
   provider?: string;
-
-  // Enhanced transit data (only present for transit modes)
-  transitDetails?: TransitDetails;
-
-  // For walking/biking segments in multi-modal trips
-  instructions?: string;
+  transitDetails?: TransitDetails; // Only populated for transit modes (train, bus)
 }
 
 export type RouteOption = {
@@ -65,7 +42,7 @@ export type RouteOption = {
   destination: Location;
   transportModes: TransportSegment[];
   totalDuration: number; // minutes
-  totalDistance: number; // kilometers
+  totalDistance: number; // miles
   totalCost: number;
   totalCarbonFootprint: number; // kg CO2e
   sustainabilityScore: number; // 0-100

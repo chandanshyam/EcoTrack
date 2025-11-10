@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { firestoreService } from '@/lib/services/firestoreService'
-import { EnvironmentalMetrics, TrendData, CompletedTrip } from '@/lib/types'
+import { EnvironmentalMetrics, TrendData, CompletedTrip, TransportMode } from '@/lib/types'
+import { getOrCreateUserProfile } from '@/lib/api-helpers'
+import { CARBON_EMISSION_FACTORS } from '@/lib/services/carbonCalculationService'
 
 // Mark this route as dynamic
 export const dynamic = 'force-dynamic'
@@ -47,14 +49,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get user profile to get userId
-    const userProfile = await firestoreService.getUserProfile(session.user.email)
-    if (!userProfile) {
-      return NextResponse.json(
-        { error: 'User profile not found' },
-        { status: 404 }
-      )
-    }
+    // Get or create user profile
+    const userProfile = await getOrCreateUserProfile(session.user.email, session.user.name)
 
     const { searchParams } = new URL(request.url)
     const period = searchParams.get('period') as 'month' | 'year' | null
@@ -80,6 +76,15 @@ export async function GET(request: NextRequest) {
     const allTrips = await firestoreService.getUserTrips(userProfile.id, {
       limit: limit ? parseInt(limit) : 1000
     })
+
+    // Recalculate total carbon saved from segments (more accurate than stored trip.carbonSaved)
+    const recalculatedCarbonSaved = calculateTotalCarbonSavedFromSegments(allTrips)
+
+    // Override metrics with recalculated carbon saved
+    const updatedMetrics = {
+      ...metrics,
+      totalCarbonSaved: recalculatedCarbonSaved
+    }
 
     // Calculate insights
     const insights = await calculateInsights(allTrips, monthlyTrends)
@@ -108,7 +113,7 @@ export async function GET(request: NextRequest) {
     }))
 
     const response: AnalyticsResponse = {
-      metrics,
+      metrics: updatedMetrics,
       trends: period === 'year' ? yearlyTrends : monthlyTrends,
       insights,
       monthlyMetrics,
@@ -123,6 +128,29 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+/**
+ * Calculate total carbon saved by summing per-segment savings
+ * This is more accurate than using stored trip.carbonSaved values
+ */
+function calculateTotalCarbonSavedFromSegments(trips: CompletedTrip[]): number {
+  const carEmissionFactor = CARBON_EMISSION_FACTORS[TransportMode.CAR].base // 0.338 kg CO2e per mile
+  let totalCarbonSaved = 0
+
+  trips.forEach(trip => {
+    trip.route.transportModes.forEach(segment => {
+      // Calculate what a car would emit for this segment's distance
+      const carEmissionsForSegment = segment.distance * carEmissionFactor
+
+      // Calculate carbon saved for this specific segment (only positive values)
+      const segmentCarbonSaved = Math.max(0, carEmissionsForSegment - segment.carbonEmission)
+
+      totalCarbonSaved += segmentCarbonSaved
+    })
+  })
+
+  return totalCarbonSaved
 }
 
 async function calculateInsights(
@@ -140,14 +168,23 @@ async function calculateInsights(
   const averageTripsPerMonth = monthsWithTrips > 0 ? trips.length / monthsWithTrips : 0
 
   // Analyze transport modes
+  // Calculate carbon saved per segment compared to driving that distance
+  const carEmissionFactor = CARBON_EMISSION_FACTORS[TransportMode.CAR].base // 0.338 kg CO2e per mile
   const transportModeStats = new Map<string, { count: number; carbonSaved: number }>()
-  
+
   trips.forEach(trip => {
     trip.route.transportModes.forEach(segment => {
       const current = transportModeStats.get(segment.mode) || { count: 0, carbonSaved: 0 }
+
+      // Calculate what a car would emit for this segment's distance
+      const carEmissionsForSegment = segment.distance * carEmissionFactor
+
+      // Calculate carbon saved for this specific segment (only positive values)
+      const segmentCarbonSaved = Math.max(0, carEmissionsForSegment - segment.carbonEmission)
+
       transportModeStats.set(segment.mode, {
         count: current.count + 1,
-        carbonSaved: current.carbonSaved + (trip.carbonSaved / trip.route.transportModes.length)
+        carbonSaved: current.carbonSaved + segmentCarbonSaved
       })
     })
   })

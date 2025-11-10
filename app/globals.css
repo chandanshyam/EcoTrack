@@ -8,18 +8,18 @@
   html {
     font-family: 'Inter', system-ui, sans-serif;
   }
-  
+
   body {
-    @apply bg-neo-white text-neo-black;
+    @apply bg-neo-dark-bg text-neo-black;
   }
-  
+
   * {
     @apply border-neo-black;
   }
 }
 
 @layer components {
-  /* Vibrant NeoBrutalism Buttons */
+  /* Earthy NeoBrutalism Buttons */
   .btn-brutal {
     @apply font-bold uppercase tracking-wide border-4 border-neo-black shadow-brutal transition-all duration-200 hover:translate-x-1 hover:translate-y-1 hover:shadow-brutal-sm active:translate-x-2 active:translate-y-2 active:shadow-none;
   }
@@ -40,7 +40,7 @@
     @apply btn-brutal bg-neo-red text-neo-white py-3 px-6;
   }
 
-  /* Vibrant NeoBrutalism Cards */
+  /* Earthy NeoBrutalism Cards */
   .card-brutal {
     @apply bg-neo-white border-4 border-neo-black shadow-brutal p-6;
   }
@@ -62,11 +62,11 @@
   }
 
   .card-olive {
-    @apply card-brutal-color bg-neo-olive shadow-brutal-color shadow-neo-black text-neo-white;
+    @apply card-brutal-color bg-neo-olive shadow-brutal-color shadow-neo-black text-neo-black;
   }
 
   .card-coral {
-    @apply card-brutal-color bg-neo-coral shadow-brutal-color shadow-neo-black text-neo-white;
+    @apply card-brutal-color bg-neo-coral shadow-brutal-color shadow-neo-black text-neo-black;
   }
 
   .card-cyan {
@@ -78,24 +78,24 @@
   }
 
   .card-blue {
-    @apply card-brutal-color bg-neo-blue shadow-brutal-color shadow-neo-black text-neo-white;
-  }
-  
-  /* Vibrant NeoBrutalism Inputs */
-  .input-brutal {
-    @apply border-4 border-neo-black bg-neo-white px-4 py-3 font-mono text-lg focus:outline-none focus:shadow-brutal-sm focus:translate-x-1 focus:translate-y-1 transition-all duration-200;
+    @apply card-brutal-color bg-neo-blue shadow-brutal-color shadow-neo-black text-neo-black;
   }
 
-  /* Vibrant NeoBrutalism Typography */
+  /* Earthy NeoBrutalism Inputs */
+  .input-brutal {
+    @apply border-4 border-neo-black bg-neo-white text-neo-black px-4 py-3 font-mono text-lg focus:outline-none focus:shadow-brutal-sm focus:translate-x-1 focus:translate-y-1 transition-all duration-200;
+  }
+
+  /* Earthy NeoBrutalism Typography */
   .heading-brutal {
     @apply font-bold uppercase tracking-wider text-neo-black;
   }
 
   .text-brutal {
-    @apply font-mono font-semibold;
+    @apply font-mono font-semibold text-neo-black;
   }
 
-  /* Sustainability Scores - Vibrant Brutalist Style */
+  /* Sustainability Scores - Earthy Brutalist Style */
   .score-high {
     @apply card-green text-neo-black font-bold text-2xl;
   }
@@ -105,7 +105,7 @@
   }
 
   .score-low {
-    @apply bg-neo-red border-4 border-neo-black shadow-brutal-color shadow-neo-black text-neo-white font-bold text-2xl p-4;
+    @apply bg-neo-red border-4 border-neo-black shadow-brutal-color shadow-neo-black text-neo-black font-bold text-2xl p-4;
   }
   
   /* NeoBrutalism Layout Elements */
@@ -126,7 +126,7 @@
     @apply animate-bounce-brutal;
   }
   
-  /* Vibrant NeoBrutalism Borders and Dividers */
+  /* Earthy NeoBrutalism Borders and Dividers */
   .border-brutal {
     @apply border-4 border-neo-black;
   }
@@ -135,7 +135,7 @@
     @apply border-t-4 border-neo-black my-8;
   }
 
-  /* Vibrant NeoBrutalism Status Indicators */
+  /* Earthy NeoBrutalism Status Indicators */
   .status-success {
     @apply bg-neo-lime border-4 border-neo-black text-neo-black font-bold px-4 py-2 uppercase tracking-wide shadow-brutal-sm;
   }
@@ -145,7 +145,7 @@
   }
 
   .status-error {
-    @apply bg-neo-red border-4 border-neo-black text-neo-white font-bold px-4 py-2 uppercase tracking-wide shadow-brutal-sm;
+    @apply bg-neo-red border-4 border-neo-black text-neo-black font-bold px-4 py-2 uppercase tracking-wide shadow-brutal-sm;
   }
 
   .status-info {
@@ -162,50 +162,50 @@
   }
 
   .tab {
-    @apply px-6 py-3 border-none border-b-4 border-transparent font-bold cursor-pointer transition-all duration-200 uppercase text-sm md:text-base flex-1 md:flex-initial min-w-[120px] text-center;
+    @apply px-6 py-3 border-none border-b-4 border-transparent font-bold cursor-pointer transition-all duration-200 uppercase text-sm md:text-base flex-1 md:flex-initial min-w-[120px] text-center text-neo-black;
   }
 
-  /* Light green shades for inactive tabs - left to right gradient */
+  /* Light theme tabs */
   .tab-routes {
-    @apply bg-[#E8F5E9]; /* Lightest green */
+    @apply bg-neo-white; /* White card color */
   }
 
   .tab-insights {
-    @apply bg-[#C8E6C9]; /* Medium light green */
+    @apply bg-neo-white; /* White card color */
   }
 
   .tab-map {
-    @apply bg-[#A5D6A7]; /* Medium green */
+    @apply bg-neo-white; /* White card color */
   }
 
-  /* Hover states - slightly darker green */
+  /* Hover states - slightly darker on hover */
   .tab-routes:hover:not(:disabled):not(.active) {
-    @apply bg-[#C8E6C9] translate-y-[-2px];
+    @apply bg-[#E8E8E8] translate-y-[-2px];
   }
 
   .tab-insights:hover:not(:disabled):not(.active) {
-    @apply bg-[#A5D6A7] translate-y-[-2px];
+    @apply bg-[#E8E8E8] translate-y-[-2px];
   }
 
   .tab-map:hover:not(:disabled):not(.active) {
-    @apply bg-[#81C784] translate-y-[-2px];
+    @apply bg-[#E8E8E8] translate-y-[-2px];
   }
 
-  /* Active states - all use teal/blue color */
+  /* Active states - use bright yellow accent */
   .tab-routes.active {
-    @apply bg-neo-teal text-neo-black border-b-neo-black shadow-brutal-sm;
+    @apply bg-neo-mustard text-neo-black border-b-neo-black shadow-brutal-sm;
   }
 
   .tab-insights.active {
-    @apply bg-neo-teal text-neo-black border-b-neo-black shadow-brutal-sm;
+    @apply bg-neo-mustard text-neo-black border-b-neo-black shadow-brutal-sm;
   }
 
   .tab-map.active {
-    @apply bg-neo-teal text-neo-black border-b-neo-black shadow-brutal-sm;
+    @apply bg-neo-mustard text-neo-black border-b-neo-black shadow-brutal-sm;
   }
 
   .tab:disabled {
-    @apply opacity-50 cursor-not-allowed bg-gray-50;
+    @apply opacity-50 cursor-not-allowed bg-neo-dark-bg;
   }
 
   .tab-content {
