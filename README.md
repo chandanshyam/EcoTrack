@@ -373,12 +373,6 @@ We welcome contributions! Please follow these steps:
 - Next.js team for the amazing framework
 - Open source community for inspiration
 
-## 📧 Contact
-
-- **Issues:** [GitHub Issues](https://github.com/your-username/ecotrack/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/your-username/ecotrack/discussions)
-- **Email:** your-email@example.com
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
