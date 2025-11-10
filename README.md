@@ -6,7 +6,7 @@
 
 EcoTrack is a Next.js-based web application that helps users plan eco-friendly trips by analyzing and suggesting routes and transport modes with minimal carbon footprint. The system leverages Google Gemini AI for sustainability analysis and integrates with Google Maps for comprehensive route planning.
 
-**🌍 Live Demo:** [EcoTrack on Cloud Run](https://your-deployed-url.run.app)
+**🌍 Live Demo:** [EcoTrack on Cloud Run](https://ecotrack-1099051481130.us-central1.run.app)
 
 ## ✨ Features
 
