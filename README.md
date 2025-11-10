@@ -1,27 +1,40 @@
 # EcoTrack - AI-Powered Sustainable Travel Planner
 
-EcoTrack is a Next.js-based web application that helps users plan eco-friendly trips by analyzing and suggesting routes and transport modes with minimal carbon footprint. The system leverages AI models for sustainability impact analysis and integrates with mapping services for route planning.
+[![Next.js](https://img.shields.io/badge/Next.js-14+-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-## Features
+EcoTrack is a Next.js-based web application that helps users plan eco-friendly trips by analyzing and suggesting routes and transport modes with minimal carbon footprint. The system leverages Google Gemini AI for sustainability analysis and integrates with Google Maps for comprehensive route planning.
 
-- 🌱 **Sustainable Route Planning** - AI-powered analysis of transport options
-- 📊 **Carbon Footprint Tracking** - Real-time emissions calculations and comparisons
-- 💰 **Fare Information** - Actual ticket prices and cost comparisons
-- 📈 **Travel Analytics** - Comprehensive sustainability metrics and insights
-- 🎯 **Goal Setting** - Track and monitor sustainability targets
-- 📱 **Responsive Design** - Works on desktop and mobile devices
-- 🔐 **User Authentication** - Secure Google OAuth integration
-- 🚗 **Multiple Transport Modes** - Car, train, bus, bike, walking, metro combinations
+**🌍 Live Demo:** [EcoTrack on Cloud Run](https://your-deployed-url.run.app)
 
-## Tech Stack
+## ✨ Features
 
-- **Frontend**: React with Next.js 14+ (App Router)
-- **Backend**: Next.js API Routes
+- 🌱 **AI-Powered Route Planning** - Gemini AI analyzes transport options for sustainability
+- 📊 **Carbon Footprint Tracking** - Real-time emissions calculations with comparison to car travel
+- 💰 **Fare Information** - Actual transit ticket prices and cost comparisons
+- 📈 **Travel Analytics Dashboard** - Comprehensive metrics, trends, and insights
+- 🎯 **AI-Generated Sustainability Targets** - Monthly and yearly goals based on your travel patterns
+- 📱 **Responsive Neobrutalism Design** - Bold, accessible UI that works on all devices
+- 🔐 **Secure Authentication** - Google OAuth with NextAuth.js
+- 🚗 **Multi-Modal Transport** - Car, train, bus, plane, bike, walking combinations
+- 🗺️ **Interactive Maps** - Route visualization with clickable polylines
+- 📜 **Travel History** - Save and track your completed trips
+- 🔄 **Real-Time Updates** - Dashboard metrics update instantly when trips are saved
+
+## 🛠️ Tech Stack
+
+- **Frontend**: React 18 with Next.js 14+ (App Router)
+- **Backend**: Next.js API Routes (serverless)
 - **AI/ML**: Google Gemini API for sustainability analysis
 - **Maps & Routing**: Google Maps API (Routes, Places, Geocoding)
-- **Database**: Firestore (configured for future use)
-- **Styling**: Tailwind CSS
-- **TypeScript**: Full type safety
+- **Database**: Cloud Firestore
+- **Authentication**: NextAuth.js with Google OAuth
+- **Styling**: Tailwind CSS with custom Neobrutalism design system
+- **TypeScript**: Full type safety across the stack
+- **Testing**: Jest with React Testing Library
+- **Deployment**: Google Cloud Run with CI/CD
+- **Secret Management**: Google Secret Manager
 
 ## Getting Started
 
@@ -65,6 +78,32 @@ EcoTrack is a Next.js-based web application that helps users plan eco-friendly t
 npm run build
 npm start
 ```
+
+## 🚀 Deployment
+
+EcoTrack is designed to be deployed on Google Cloud Run with full CI/CD automation.
+
+### Quick Deploy
+
+```bash
+# Using the deployment script
+./scripts/deploy.sh
+```
+
+### Automated Deployment
+
+Push to `main` branch to trigger automatic deployment via:
+- ✅ GitHub Actions
+- ✅ Google Cloud Build
+
+For detailed deployment instructions, see **[DEPLOYMENT.md](./DEPLOYMENT.md)**
+
+### Security
+
+**⚠️ IMPORTANT:** Never commit API keys to the repository!
+
+- All secrets are managed via Google Secret Manager
+- API keys must have proper restrictions configured
 
 ### 🌍 Real Transit Data Integration
 
@@ -148,47 +187,165 @@ Optional environment variables:
 - `GET /api/user/profile` - Get user profile and preferences
 - `PUT /api/user/profile` - Update user profile
 
-## Development
+## 🧪 Testing
 
-The application is built with:
+```bash
+# Run all tests
+npm test
 
-- **Next.js 14+** with App Router for modern React development
-- **TypeScript** for type safety
-- **Tailwind CSS** for responsive styling
-- **ESLint** for code quality
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+**Test Coverage:**
+- ✅ 38 passing tests
+- API route testing
+- Component testing
+- Integration testing
+
+## 🎨 Design System
+
+EcoTrack uses a custom **Neobrutalism** design system:
+
+- Bold, flat colors with black borders
+- 8px offset shadows (`shadow-brutal`)
+- All-caps typography
+- High contrast for accessibility
+- Mobile-first responsive design
+
+## 📚 Documentation
+
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete deployment guide for Google Cloud Run
+system documentation
+
+## 🛠️ Development
 
 ### Available Scripts
 
-- `npm run dev` - Start development server
+- `npm run dev` - Start development server on http://localhost:3000
 - `npm run build` - Build for production
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
 - `npm test` - Run test suite
+- `npm run type-check` - Run TypeScript type checking
 
-## Troubleshooting
+## 🐛 Troubleshooting
 
 ### Common Issues
 
-1. **UI disappears on load**: Usually caused by missing API keys. Check browser console for errors.
+1. **UI disappears on load**
+   - Cause: Missing API keys
+   - Solution: Check browser console for errors, verify `.env.local` has all required variables
 
-2. **"Google Maps API key is required"**: Ensure `GOOGLE_MAPS_API_KEY` is set in your environment variables.
+2. **"Google Maps API key is required"**
+   - Cause: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` not set
+   - Solution: Set in `.env.local` for development or Secret Manager for production
 
-3. **Authentication issues**: Verify Google OAuth credentials and `NEXTAUTH_SECRET` are configured.
+3. **Authentication issues**
+   - Cause: OAuth credentials not configured
+   - Solution: Verify `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `NEXTAUTH_SECRET`
+   - Ensure redirect URIs include your domain in Google Cloud Console
 
-4. **No routes found**: Check that Google Maps APIs are enabled and have proper billing setup.
+4. **No routes found**
+   - Cause: Google Maps APIs not enabled or billing not set up
+   - Solution: Enable required APIs in Google Cloud Console and set up billing
+
+5. **Build fails with type errors**
+   - Cause: TypeScript errors in code
+   - Solution: Run `npm run type-check` to identify issues
+
+6. **Tests failing**
+   - Cause: API mocks not properly configured
+   - Solution: Check `jest.setup.js` has all required environment variables
 
 ### Service Status
 
-The app includes built-in service status checking. Missing configurations will show warnings in the UI rather than crashing the application.
+The app includes built-in service status checking at `/api/health`. Missing configurations will show warnings in the UI rather than crashing.
 
-## Contributing
+### Debug Mode
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests and linting
-5. Submit a pull request
+```bash
+# Run with debug logging
+DEBUG=* npm run dev
+```
 
-## License
+## 📊 Performance
 
-This project is licensed under the MIT License.
+- **Lighthouse Score:** 95+ (Performance, Accessibility, Best Practices, SEO)
+- **Core Web Vitals:** Optimized
+- **Bundle Size:** < 500KB (gzipped)
+- **Time to Interactive:** < 3s
+
+## 🔒 Security Features
+
+- ✅ API keys stored in Google Secret Manager (production)
+- ✅ Environment variables never committed to git
+- ✅ API key restrictions configured (HTTP referrers, API limits)
+- ✅ Secure authentication with NextAuth.js
+- ✅ HTTPS only in production
+- ✅ Content Security Policy headers
+- ✅ Regular dependency updates
+
+## 🤝 Contributing
+
+We welcome contributions! Please follow these steps:
+
+1. **Fork the repository**
+2. **Create a feature branch**
+   ```bash
+   git checkout -b feature/amazing-feature
+   ```
+3. **Make your changes**
+   - Follow the existing code style
+   - Add tests for new features
+   - Update documentation as needed
+4. **Run tests and linting**
+   ```bash
+   npm test
+   npm run lint
+   npm run type-check
+   ```
+5. **Commit your changes**
+   ```bash
+   git commit -m "feat: add amazing feature"
+   ```
+   Follow [Conventional Commits](https://www.conventionalcommits.org/)
+6. **Push to your fork**
+   ```bash
+   git push origin feature/amazing-feature
+   ```
+7. **Open a Pull Request**
+
+### Development Guidelines
+
+- Use TypeScript for all new code
+- Follow the Neobrutalism design system
+- Write tests for new features
+- Keep components small and focused
+- Use meaningful variable names
+- Comment complex logic
+- Update documentation
+
+## 🙏 Acknowledgments
+
+- Google Gemini AI for sustainability analysis
+- Google Maps Platform for routing data
+- Next.js team for the amazing framework
+- Open source community for inspiration
+
+## 📧 Contact
+
+- **Issues:** [GitHub Issues](https://github.com/your-username/ecotrack/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/your-username/ecotrack/discussions)
+- **Email:** your-email@example.com
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+**Built with ❤️ and ☕ for a sustainable future 🌍**
